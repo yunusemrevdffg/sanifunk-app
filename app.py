@@ -49,9 +49,9 @@ def send_push(title, message, is_alarm=True):
     except:
         pass
 
-# --- SERVICE WORKER ROUTE (FIX) ---
 @app.route('/OneSignalSDKWorker.js')
 def onesignal_worker():
+    # Wir schicken die Datei direkt aus dem static-Ordner
     return app.send_static_file('OneSignalSDKWorker.js')
 
 # --- BASIS ROUTEN ---
