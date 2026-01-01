@@ -87,6 +87,43 @@ def chat():
     group = GROUPS.get(user.get('group'), {})
     return render_template('chat.html', user=user, messages=group.get('messages', []))
 
+# --- HIER SIND DIE FEHLENDEN ROUTEN ---
+
+@app.route('/alarms')
+def alarms():
+    if 'email' not in session: return redirect(url_for('login'))
+    user = USERS.get(session['email'])
+    # Holt die Historie der Gruppe oder eine leere Liste
+    group_data = GROUPS.get(user.get('group'), {})
+    hist = group_data.get('history', [])[::-1] # Neueste zuerst
+    return render_template('alarm_log.html', user=user, history=hist)
+
+@app.route('/management')
+def management():
+    if 'email' not in session: return redirect(url_for('login'))
+    user = USERS.get(session['email'])
+    # Nur Admins dürfen hier rein
+    if user.get('role') not in ['ADMIN', 'HAUPTADMIN']:
+        abort(403)
+    return render_template('management.html', user=user, all_users=USERS, all_groups=GROUPS)
+
+# --- API ENDPUNKTE ---
+
+@app.route('/api/trigger_alarm', methods=['POST'])
+def trigger_alarm():
+    data = request.json
+    sender = USERS[session['email']]
+    alarm = {'from': sender['name'], 'sender_email': session['email'], 'msg': data.get('message'), 'active': True, 'time': datetime.now().strftime('%H:%M:%S')}
+    g_name = sender['group']
+    if g_name in GROUPS:
+        if data.get('target') == 'all': GROUPS[g_name]['global_alarm'] = alarm
+        else: USERS[data.get('target')]['active_alarm'] = alarm
+        # Füge den Alarm zur Historie hinzu
+        GROUPS[g_name].setdefault('history', []).append(alarm)
+        save_data(GROUP_FILE, GROUPS); save_data(USER_FILE, USERS)
+        send_push(f"🚨 ALARM: {sender['name']}", data.get('message'))
+    return jsonify({'status': 'ok'})
+
 @app.route('/api/check_alarm')
 def check_alarm():
     user = USERS.get(session.get('email'))
