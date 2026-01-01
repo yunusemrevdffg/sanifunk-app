@@ -1,50 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="SaniFunk">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.png') }}">
+    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Alarm App</title>
+    <title>SaniFunk</title>
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+          appId: "d870e250-c800-4f83-bacb-c05f6e08c99f",
+        });
+      });
+    </script>
+
+    <style>
+        .nav-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 65px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #ddd;
+            z-index: 2000;
+        }
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            text-decoration: none;
+        }
+        .nav-item.active {
+            color: #8b0000;
+            font-weight: bold;
+        }
+        .flashes {
+            background: #ffe3e3;
+            color: #b00;
+            padding: 10px;
+            text-align: center;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-    <style>
-    .nav-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 65px;
-    background: white;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    border-top: 1px solid #ddd;
-    z-index: 2000;
-}
-
-.nav-item {
-    flex: 1;
-    text-align: center;
-    font-size: 12px;
-    color: #666;
-    text-decoration: none;
-}
-
-.nav-item.active {
-    color: #8b0000;
-    font-weight: bold;
-}
-    </style>
-    
     <div class="container">
-        {% with messages = get_flashed_messages() %}{% if messages %}
-            {% for m in messages %}<p class="flashes">{{ m }}</p>{% endfor %}
-        {% endif %}{% endwith %}
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for m in messages %}<p class="flashes">{{ m }}</p>{% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         {% block content %}{% endblock %}
     </div>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
