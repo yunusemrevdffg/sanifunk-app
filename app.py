@@ -51,10 +51,16 @@ def send_push(title, message, is_alarm=True):
 
 @app.route('/OneSignalSDKWorker.js')
 def onesignal_worker():
-    # Wir schicken die Datei direkt aus dem static-Ordner
-    return app.send_static_file('OneSignalSDKWorker.js')
+    import os
+    # Findet den absoluten Pfad zum static-Ordner auf dem Server
+    static_dir = os.path.join(app.root_path, 'static')
+    return send_from_directory(static_dir, 'OneSignalSDKWorker.js')
 
+# WICHTIG: Du musst 'send_from_directory' oben importieren!
+# Ändere deine erste Zeile in der app.py so:
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, abort, send_from_directory
 # --- BASIS ROUTEN ---
+
 @app.route('/')
 def index():
     if 'email' not in session: return redirect(url_for('login'))
