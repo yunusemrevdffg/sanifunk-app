@@ -35,13 +35,12 @@ def send_push(title, message, is_alarm=True):
     try: requests.post("https://onesignal.com/api/v1/notifications", headers=header, json=payload, timeout=5)
     except: pass
 
-# --- FIX FÜR DIE ROUTEN ---
+# --- SERVICE WORKER ---
 @app.route('/OneSignalSDKWorker.js')
 def onesignal_worker():
-    # Dieser Befehl sucht die Datei direkt im 'static' Ordner
     return send_from_directory(os.path.join(app.root_path, 'static'), 'OneSignalSDKWorker.js')
 
-# --- BASIS ROUTEN ---
+# --- BASIS & LOGIN ---
 @app.route('/')
 def index():
     if 'email' not in session: return redirect(url_for('login'))
@@ -78,6 +77,7 @@ def group_menu():
             return redirect(url_for('dashboard'))
     return render_template('group_menu.html', groups=GROUPS.keys())
 
+# --- DASHBOARD & CHAT ---
 @app.route('/dashboard')
 def dashboard():
     if 'email' not in session: return redirect(url_for('login'))
@@ -85,6 +85,24 @@ def dashboard():
     group = GROUPS.get(user.get('group'), {'members': []})
     return render_template('dashboard.html', user=user, members_emails=group.get('members', []), all_users=USERS)
 
+@app.route('/chat')
+def chat():
+    if 'email' not in session: return redirect(url_for('login'))
+    user = USERS.get(session['email'])
+    group = GROUPS.get(user.get('group'), {})
+    return render_template('chat.html', user=user, messages=group.get('messages', []))
+
+@app.route('/api/send_chat', methods=['POST'])
+def send_chat():
+    user = USERS[session['email']]
+    data = request.json
+    new_msg = {'user': user['name'], 'text': data['text'], 'time': datetime.now().strftime('%H:%M')}
+    if user['group'] in GROUPS:
+        GROUPS[user['group']].setdefault('messages', []).append(new_msg)
+        save_data(GROUP_FILE, GROUPS)
+    return jsonify(new_msg)
+
+# --- ALARM SYSTEM ---
 @app.route('/api/trigger_alarm', methods=['POST'])
 def trigger_alarm():
     data = request.json
@@ -93,9 +111,36 @@ def trigger_alarm():
     if sender['group'] in GROUPS:
         if data.get('target') == 'all': GROUPS[sender['group']]['global_alarm'] = alarm
         else: USERS[data.get('target')]['active_alarm'] = alarm
+        GROUPS[sender['group']].setdefault('history', []).append(alarm)
         save_data(GROUP_FILE, GROUPS); save_data(USER_FILE, USERS)
         send_push(f"🚨 ALARM: {sender['name']}", data.get('message', 'Eilt sehr!'))
     return jsonify({'status': 'ok'})
+
+@app.route('/api/check_alarm')
+def check_alarm():
+    user = USERS.get(session.get('email'))
+    if not user: return jsonify({'active': False})
+    p = user.get('active_alarm'); g = GROUPS.get(user['group'], {}).get('global_alarm')
+    if p and p['active']: return jsonify(p)
+    if g and g['active'] and g['sender_email'] != session['email']: return jsonify(g)
+    return jsonify({'active': False})
+
+@app.route('/alarms')
+def alarms():
+    if 'email' not in session: return redirect(url_for('login'))
+    user = USERS[session['email']]
+    hist = GROUPS.get(user['group'], {}).get('history', [])[::-1]
+    return render_template('alarm_log.html', user=user, history=hist)
+
+# --- MANAGEMENT ---
+@app.route('/management')
+def management():
+    if 'email' not in session: return redirect(url_for('login'))
+    user = USERS.get(session['email'])
+    if user['role'] not in ['ADMIN', 'HAUPTADMIN']: abort(403)
+    is_haupt = (user['role'] == 'HAUPTADMIN')
+    m_list = USERS.keys() if is_haupt else GROUPS.get(user['group'], {}).get('members', [])
+    return render_template('management.html', user=user, members=m_list, all_users=USERS, all_groups=GROUPS, is_hauptadmin=is_haupt)
 
 @app.route('/logout')
 def logout():
