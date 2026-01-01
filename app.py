@@ -42,16 +42,19 @@ def send_push(title, message, is_alarm=True):
     }
     if is_alarm:
         payload["ios_sound"] = "alarm.wav"
+        payload["android_sound"] = "alarm"
     
     try:
         requests.post("https://onesignal.com/api/v1/notifications", headers=header, json=payload, timeout=5)
     except:
         pass
 
+# --- SERVICE WORKER ROUTE (FIX FÜR RAILWAY) ---
 @app.route('/OneSignalSDKWorker.js')
 def onesignal_worker():
-    # Wir sagen Flask explizit, dass die Datei im Ordner 'static' liegt
+    # Diese Funktion zwingt Flask, im 'static' Ordner nach der Datei zu suchen
     return app.send_static_file('OneSignalSDKWorker.js')
+
 # --- BASIS ROUTEN ---
 @app.route('/')
 def index():
@@ -86,7 +89,6 @@ def register():
         flash('Erfolgreich registriert!')
     return redirect(url_for('login'))
 
-# --- GRUPPEN AUSWAHL ---
 @app.route('/group-menu', methods=['GET', 'POST'])
 def group_menu():
     if 'email' not in session: return redirect(url_for('login'))
@@ -102,7 +104,6 @@ def group_menu():
             return redirect(url_for('dashboard'))
     return render_template('group_menu.html', groups=GROUPS.keys())
 
-# --- DASHBOARD & CHAT ---
 @app.route('/dashboard')
 def dashboard():
     if 'email' not in session: return redirect(url_for('login'))
@@ -119,6 +120,7 @@ def chat():
 
 @app.route('/api/send_chat', methods=['POST'])
 def send_chat():
+    if 'email' not in session: return jsonify({'error': 'Unauthorized'}), 401
     user = USERS[session['email']]
     data = request.json
     new_msg = {'user': user['name'], 'text': data['text'], 'time': datetime.now().strftime('%H:%M')}
@@ -127,25 +129,35 @@ def send_chat():
         save_data(GROUP_FILE, GROUPS)
     return jsonify(new_msg)
 
-# --- ALARM LOGIK ---
 @app.route('/api/trigger_alarm', methods=['POST'])
 def trigger_alarm():
+    if 'email' not in session: return jsonify({'error': 'Unauthorized'}), 401
     data = request.json
     sender = USERS[session['email']]
-    alarm = {'from': sender['name'], 'sender_email': session['email'], 'msg': data.get('message'), 'lat': data.get('lat'), 'lng': data.get('lng'), 'active': True, 'time': datetime.now().strftime('%H:%M:%S')}
+    alarm = {
+        'from': sender['name'], 
+        'sender_email': session['email'], 
+        'msg': data.get('message'), 
+        'lat': data.get('lat'), 
+        'lng': data.get('lng'), 
+        'active': True, 
+        'time': datetime.now().strftime('%H:%M:%S')
+    }
     g_name = sender['group']
     
     if g_name in GROUPS:
         if data.get('target') == 'all': 
             GROUPS[g_name]['global_alarm'] = alarm
         else: 
-            USERS[data.get('target')]['active_alarm'] = alarm
+            target_email = data.get('target')
+            if target_email in USERS:
+                USERS[target_email]['active_alarm'] = alarm
             
         GROUPS[g_name].setdefault('history', []).append(alarm)
         save_data(GROUP_FILE, GROUPS); save_data(USER_FILE, USERS)
         
         # PUSH SENDEN
-        send_push(f"🚨 ALARM: {sender['name']}", data.get('message', 'Eilt sehr!'), is_alarm=True)
+        send_push(f"🚨 ALARM: {sender['name']}", data.get('message', 'Eilt sehr!'))
         
     return jsonify({'status': 'ok'})
 
@@ -153,24 +165,28 @@ def trigger_alarm():
 def check_alarm():
     user = USERS.get(session.get('email'))
     if not user: return jsonify({'active': False})
-    p = user.get('active_alarm'); g = GROUPS.get(user['group'], {}).get('global_alarm')
-    if p and p['active']: return jsonify(p)
-    if g and g['active'] and g['sender_email'] != session['email']: return jsonify(g)
+    p = user.get('active_alarm')
+    g = GROUPS.get(user.get('group'), {}).get('global_alarm')
+    if p and p.get('active'): return jsonify(p)
+    if g and g.get('active') and g.get('sender_email') != session['email']: return jsonify(g)
     return jsonify({'active': False})
 
 @app.route('/api/stop_alarm', methods=['POST'])
 def stop_alarm():
-    email = session['email']
+    email = session.get('email')
+    if not email: return jsonify({'error': 'Unauthorized'}), 401
     USERS[email]['active_alarm'] = None
-    if USERS[email]['group'] in GROUPS: GROUPS[USERS[email]['group']]['global_alarm'] = None
+    group_name = USERS[email].get('group')
+    if group_name and group_name in GROUPS:
+        GROUPS[group_name]['global_alarm'] = None
     save_data(USER_FILE, USERS); save_data(GROUP_FILE, GROUPS)
     return jsonify({'status': 'stopped'})
 
 @app.route('/alarms')
-def alarms():
+def alarms_log():
     if 'email' not in session: return redirect(url_for('login'))
     user = USERS[session['email']]
-    hist = GROUPS.get(user['group'], {}).get('history', [])[::-1]
+    hist = GROUPS.get(user.get('group'), {}).get('history', [])[::-1]
     return render_template('alarm_log.html', user=user, history=hist)
 
 @app.route('/management')
