@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">GRUPPEN-MENÜ</div>
+    <div class="group-tabs">
+        <button class="tab-btn active" onclick="show('join')">Beitreten</button>
+        <button class="tab-btn" onclick="show('create')">Erstellen</button>
+    </div>
+
+    <div id="joinSection" style="padding:15px;">
+        {% for name, data in groups.items() %}
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <strong>{{ name }}</strong>
+                <span class="badge {% if data.type=='private' %}badge-private{% else %}badge-public{% endif %}">
+                    {% if data.type=='private' %}🔒{% else %}🔓{% endif %}
+                </span>
+            </div>
+            <form action="/group-menu" method="POST" style="display:flex; gap:5px;">
+                <input type="hidden" name="action" value="join">
+                <input type="hidden" name="group_name" value="{{ name }}">
+                {% if data.type == 'private' %}
+                <input type="password" name="join_password" placeholder="PW" required style="width:80px; margin:0;">
+                {% endif %}
+                <button type="submit" style="background:var(--red); color:white; border:none; padding:8px; border-radius:5px;">Join</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="createSection" class="hidden" style="padding:15px;">
+        <form action="/group-menu" method="POST" class="card">
+            <input type="hidden" name="action" value="create">
+            <input type="text" name="group_name" placeholder="Gruppenname" required>
+            <select name="group_type" id="gt" onchange="document.getElementById('pwf').style.display=(this.value=='private'?'block':'none')">
+                <option value="public">Öffentlich</option>
+                <option value="private">Privat (mit Passwort)</option>
+            </select>
+            <div id="pwf" style="display:none;"><input type="text" name="group_password" placeholder="Gruppen-Passwort festlegen"></div>
+            <button type="submit" class="btn-alarm" style="margin-top:10px;">ERSTELLEN</button>
+        </form>
+    </div>
+
+    <script>
+        function show(s){
+            document.getElementById('joinSection').classList.toggle('hidden', s!='join');
+            document.getElementById('createSection').classList.toggle('hidden', s!='create');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(s)));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Verwaltung - SaniFunk</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding-bottom: 80px; }
+        .header { background: #8b0000; color: white; padding: 20px; text-align: center; font-weight: bold; font-size: 1.2em; }
+        .section-title { padding: 15px 15px 5px 15px; font-weight: bold; color: #8b0000; text-transform: uppercase; font-size: 0.9em; }
+        .card { background: white; margin: 10px; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .user-info b { font-size: 1.1em; color: #333; }
+        .user-info span { color: #666; font-size: 0.85em; }
+        .controls { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+        select, button { padding: 8px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; font-size: 0.9em; }
+        .btn-reset { background: #eee; }
+        .btn-ban { background: #000; color: white; border: none; }
+        .btn-delete-group { background: #ff4444; color: white; border: none; width: 100%; margin-top: 10px; }
+        .logout-top { text-align: right; padding: 10px; background: #ddd; }
+        .logout-top a { color: #8b0000; text-decoration: none; font-weight: bold; }
+        .pw-tag { background: #eee; padding: 2px 5px; border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    {% if is_hauptadmin %}
+    <div class="logout-top"><a href="/logout">Abmelden 🚪</a></div>
+    {% endif %}
+
+    <div class="header">
+        {% if is_hauptadmin %} 👑 SYSTEM-ZENTRALE {% else %} ⚙️ GRUPPEN-ADMIN {% endif %}
+    </div>
+
+    <div class="section-title">Benutzer-Verwaltung</div>
+    <div style="padding: 5px;">
+        {% for m_mail in members %}
+        <div class="card">
+            <div class="user-info">
+                <b>{{ all_users[m_mail]['name'] }}</b><br>
+                <span>{{ m_mail }}</span><br>
+                <small>Passwort: <span class="pw-tag">{{ all_users[m_mail]['password'] }}</span></small>
+            </div>
+            
+            <div class="controls">
+                <select onchange="updateUser('{{ m_mail }}', 'role', this.value)">
+                    <option value="SANI" {% if all_users[m_mail]['role'] == 'SANI' %}selected{% endif %}>Sani</option>
+                    <option value="ADMIN" {% if all_users[m_mail]['role'] == 'ADMIN' %}selected{% endif %}>Admin</option>
+                    {% if is_hauptadmin %}
+                    <option value="HAUPTADMIN" {% if all_users[m_mail]['role'] == 'HAUPTADMIN' %}selected{% endif %}>Hauptadmin</option>
+                    {% endif %}
+                </select>
+                <button class="btn-reset" onclick="resetPassword('{{ m_mail }}')">PW ändern</button>
+                {% if is_hauptadmin %}
+                <button class="btn-ban" onclick="banUser('{{ m_mail }}')">LÖSCHEN</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if is_hauptadmin %}
+    <div class="section-title">Gruppen-Verwaltung</div>
+    <div style="padding: 5px;">
+        {% for g_name, g_data in all_groups.items() %}
+        <div class="card" style="border-left: 5px solid #8b0000;">
+            <b>Gruppe: {{ g_name }}</b><br>
+            <span>Passwort: <span class="pw-tag">{{ g_data.password if g_data.password else 'Keines' }}</span></span><br>
+            <div style="font-size: 0.85em; margin-top:5px; color: #555;">
+                Mitglieder: {{ g_data.members | join(', ') }}
+            </div>
+            <button class="btn-delete-group" onclick="deleteGroup('{{ g_name }}')">GRUPPE LÖSCHEN</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not is_hauptadmin %}
+    <nav class="nav-bar">
+        <a href="/dashboard" class="nav-item">🏠<br>Home</a>
+        <a href="/management" class="nav-item active">⚙️<br>Admin</a>
+        <a href="/logout" class="nav-item" style="color: #ff4444;">🚪<br>Ausloggen</a>
+    </nav>
+    {% endif %}
+
+    <script>
+        function updateUser(email, field, val) {
+            fetch('/api/admin/update_user', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email: email, [field]: val})
+            }).then(res => res.json()).then(data => {
+                if(data.status !== 'ok') alert("Fehler: " + (data.message || "Unbekannt"));
+            });
+        }
+
+        function resetPassword(email) {
+            let newPw = prompt("Neues Passwort für " + email + ":");
+            if(newPw) {
+                updateUser(email, 'password', newPw);
+                setTimeout(() => location.reload(), 500);
+            }
+        }
+
+        function banUser(email) {
+            if(confirm("User " + email + " wirklich löschen?")) {
+                fetch('/api/admin/delete_user', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email: email})
+                }).then(() => location.reload());
+            }
+        }
+
+        function deleteGroup(groupName) {
+            if(confirm("Gruppe '" + groupName + "' löschen? Alle User werden gruppenlos!")) {
+                fetch('/api/admin/delete_group', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({group_name: groupName})
+                }).then(() => location.reload());
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+    
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <div class="header">{{ user.group }} Dashboard</div>
+    <style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column; /* Handy: Untereinander */
+        gap: 15px;
+        padding: 10px;
+    }
+
+    @media (min-width: 768px) {
+        .dashboard-container {
+            flex-direction: row; /* PC: Nebeneinander */
+            flex-wrap: wrap;
+        }
+        .card { flex: 1; min-width: 300px; }
+    }
+
+    .btn-alarm {
+        width: 100%;
+        height: 60px; /* Große Touch-Fläche für Notfälle */
+        font-size: 1.2em;
+        border-radius: 15px;
+    }
+</style>
+    
+    <div class="card">
+        <h3>🚨 Alarm auslösen</h3>
+        <select id="target">
+            <option value="all">ALLE MITGLIEDER</option>
+            {% for m in members_emails if m != session['email'] %}
+            <option value="{{ m }}">{{ all_users[m]['name'] }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" id="msg" placeholder="Was ist passiert? (z.B. Reanimation)">
+        <div class="gps-row">
+    <input type="checkbox" id="gps" checked>
+    <label for="gps">📍 Standort mitsenden</label>
+    </div>
+    </div>
+        <button class="btn-alarm" onclick="sendAlarm()">ALARM SENDEN</button>
+    </div>
+
+    <div style="text-align:center; margin-top:30px;">
+        <button onclick="leaveGroup()" style="background:none; border:none; color:var(--red); font-size:0.9em; cursor:pointer;">🚪 Gruppe verlassen</button>
+    </div>
+
+    <div id="alarmOverlay">
+        <h1 style="font-size:3.5em; margin:0;">🚨 EINSATZ</h1>
+        <p id="alarmInfo" style="font-size:1.8em; margin:20px 0;"></p>
+        <div id="mapLink"></div>
+        <button onclick="stopAlarm()" style="background:white; color:var(--red); padding:25px; width:100%; border:none; border-radius:15px; margin-top:30px; font-weight:bold; font-size:1.3em;">VERSTANDEN / STOPP</button>
+    </div>
+
+    <nav class="nav-bar">
+    <a href="/dashboard" class="nav-item">🏠<br>Home</a>
+    <a href="/alarms" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/chat" class="nav-item">💬<br>Chat</a>
+    {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
+    <a href="/management" class="nav-item">⚙️<br>Admin</a>
+    {% endif %}
+    <a href="/logout" class="nav-item" style="color: #ff4444;">🚪<br>Ausloggen</a>
+    </nav>
+
+    <script>
+        const alarmSound = new Audio("/static/audio/alarm.mp3"); alarmSound.loop = true;
+        function initAudio() { alarmSound.play().then(() => { alarmSound.pause(); document.getElementById('unlock').style.display='none'; }); }
+
+        function sendAlarm() {
+            const t = document.getElementById('target').value, m = document.getElementById('msg').value;
+            if(document.getElementById('gps').checked) {
+                navigator.geolocation.getCurrentPosition(p => exec(t,m,p.coords.latitude,p.coords.longitude), () => exec(t,m,null,null));
+            } else { exec(t,m,null,null); }
+        }
+        function exec(t, m, la, lo) {
+    // Visuelles Feedback sofort geben
+    const btn = document.querySelector('.btn-alarm');
+    const originalText = btn.innerText;
+    btn.innerText = "SENDET...";
+    btn.style.background = "orange";
+
+    fetch('/api/trigger_alarm', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({target: t, message: m, lat: la, lng: lo})
+    }).then(() => {
+        // Sofort zurücksetzen ohne blockierendes Alert-Fenster
+        btn.innerText = "VERSENDET! ✅";
+        btn.style.background = "green";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "";
+            document.getElementById('msg').value = ""; // Feld leeren
+        }, 2000);
+    });
+}
+
+        setInterval(() => {
+            fetch('/api/check_alarm').then(r=>r.json()).then(d => {
+                if(d.active) {
+                    document.getElementById('alarmOverlay').style.display='block';
+                    document.getElementById('alarmInfo').innerText = d.from + ": " + d.msg;
+                    if(d.lat) document.getElementById('mapLink').innerHTML = `<a href="https://www.google.com/maps?q=${d.lat},${d.lng}" target="_blank" style="color:yellow; font-weight:bold; font-size:1.2em;">📍 EINSATZORT ANZEIGEN</a>`;
+                    alarmSound.play();
+                }
+            });
+        }, 3000);
+
+        function stopAlarm() { fetch('/api/stop_alarm',{method:'POST'}).then(() => { alarmSound.pause(); document.getElementById('alarmOverlay').style.display='none'; }); }
+        function leaveGroup() { if(confirm("Gruppe wirklich verlassen?")) fetch('/api/leave_group',{method:'POST'}).then(() => window.location.href="/group-menu"); }
+    </script>
+{% endblock %}

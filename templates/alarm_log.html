@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">EINSATZ-LOGBUCH</div>
+    
+    <div style="padding: 10px; margin-bottom: 80px;">
+        {% for a in history %}
+        <div class="card" style="border-left: 5px solid #e63946;">
+            <small style="color: #666;">{{ a.time }} Uhr</small>
+            <div style="margin-top: 5px;">
+                <b>Von: {{ a.from }}</b><br>
+                <span>Meldung: {{ a.msg }}</span>
+            </div>
+            {% if a.lat %}
+            <div style="margin-top: 10px;">
+                <a href="https://www.google.com/maps?q={{ a.lat }},{{ a.lng }}" target="_blank" 
+                   style="color: #1d3557; text-decoration: none; font-size: 0.9em; font-weight: bold;">
+                   📍 Standort anzeigen
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p style="text-align: center; color: #666; margin-top: 50px;">Bisher keine Einsätze protokolliert.</p>
+        {% endfor %}
+    </div>
+
+    <nav class="nav-bar">
+    <a href="/dashboard" class="nav-item">🏠<br>Home</a>
+    <a href="/alarms" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/chat" class="nav-item">💬<br>Chat</a>
+    {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
+    <a href="/management" class="nav-item">⚙️<br>Admin</a>
+    {% endif %}
+    <a href="/logout" class="nav-item" style="color: #ff4444;">🚪<br>Ausloggen</a>
+    </nav>
+</body>
+</html>

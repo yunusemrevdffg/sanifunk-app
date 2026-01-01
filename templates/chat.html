@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <style>
+    #chat-container {
+        height: calc(100vh - 150px); /* Dynamische Höhe abzüglich Header/Eingabe */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .message {
+        max-width: 85%; /* Nachrichten nutzen fast die ganze Breite */
+        padding: 10px;
+        margin: 5px;
+        border-radius: 15px;
+        font-size: 16px; /* Wichtig gegen Auto-Zoom auf iPhones */
+    }
+
+    .chat-input-area {
+        position: fixed;
+        bottom: 70px; /* Über der Nav-Bar */
+        width: 100%;
+        display: flex;
+        background: white;
+        padding: 10px;
+    }
+</style>
+    <div class="header">GRUPPEN-CHAT</div>
+    <div class="chat-container">
+        {% for m in messages %}
+        <div class="msg-bubble {% if m.user == user.name %}own{% else %}other{% endif %}">
+            <small style="display:block; font-size:10px; opacity:0.7;">{{ m.user }} • {{ m.time }}</small>
+            {{ m.text }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-input-bar">
+        <input type="text" id="t" placeholder="Nachricht...">
+        <button onclick="s()" style="background:var(--red); color:white; border:none; padding:10px; border-radius:5px;">➔</button>
+    </div>
+
+    <nav class="nav-bar">
+    <a href="/dashboard" class="nav-item">🏠<br>Home</a>
+    <a href="/alarms" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/chat" class="nav-item">💬<br>Chat</a>
+    {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
+    <a href="/management" class="nav-item">⚙️<br>Admin</a>
+    {% endif %}
+    <a href="/logout" class="nav-item" style="color: #ff4444;">🚪<br>Ausloggen</a>
+    </nav>
+    <script>
+    // Scrollt beim Start nach unten
+    window.scrollTo(0, document.body.scrollHeight);
+
+    // Funktion zum Senden
+    function s() {
+        const input = document.getElementById('t');
+        const text = input.value;
+        if (!text) return;
+        
+        fetch('/api/send_chat', {
+            method:'POST', 
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({text: text})
+        }).then(() => {
+            input.value = ''; // Eingabefeld leeren
+            loadMessages();   // Sofort aktualisieren
+        });
+    }
+
+    // Funktion zum Laden der Nachrichten alle 2 Sekunden
+    function loadMessages() {
+        fetch('/chat') // Wir laden die Seite im Hintergrund
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.querySelector('.chat-container').innerHTML;
+                const container = document.querySelector('.chat-container');
+                
+                // Nur scrollen, wenn neue Nachrichten da sind
+                if (container.innerHTML !== newContent) {
+                    container.innerHTML = newContent;
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
+            });
+    }
+
+    // Intervall starten: Alle 2000ms (2 Sekunden)
+    setInterval(loadMessages, 2000);
+</script>
+</body>
+</html>
