@@ -1,115 +1,207 @@
 {% extends "base.html" %}
 {% block content %}
-    
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <div class="header">{{ user.group }} Dashboard</div>
-    <style>
-    .dashboard-container {
-        display: flex;
-        flex-direction: column; /* Handy: Untereinander */
-        gap: 15px;
-        padding: 10px;
-    }
 
-    @media (min-width: 768px) {
-        .dashboard-container {
-            flex-direction: row; /* PC: Nebeneinander */
-            flex-wrap: wrap;
-        }
-        .card { flex: 1; min-width: 300px; }
-    }
+<style>
+    :root { --red: #ff0000; --dark: #000000; --white: #ffffff; }
+    body { background: #f4f4f4; padding-bottom: 90px; font-family: 'Arial Black', sans-serif; }
 
-    .btn-alarm {
-        width: 100%;
-        height: 60px; /* Große Touch-Fläche für Notfälle */
-        font-size: 1.2em;
-        border-radius: 15px;
-    }
-</style>
+    .header-branding { background: var(--red); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--dark); text-transform: uppercase; letter-spacing: 1px; }
     
+    .dashboard-container { padding: 15px; max-width: 800px; margin: auto; }
+    
+    .card { background: var(--white); border: 3px solid var(--dark); padding: 15px; margin-bottom: 20px; box-shadow: 6px 6px 0px var(--red); }
+    .card h3 { margin-top: 0; border-bottom: 2px solid var(--dark); padding-bottom: 5px; text-transform: uppercase; font-size: 1.1em; }
+
+    input, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid var(--dark); font-weight: bold; box-sizing: border-box; }
+    
+    .btn-alarm { width: 100%; padding: 20px; font-size: 1.3em; background: var(--red); color: white; border: 3px solid var(--dark); font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+    .btn-alarm:active { transform: scale(0.98); box-shadow: none; }
+
+    /* Mitglieder Liste mit Melde-Button */
+    .member-list { margin-top: 10px; }
+    .member-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #ddd; }
+    .btn-report { background: none; border: none; font-size: 1.2em; cursor: pointer; filter: grayscale(1); transition: 0.2s; }
+    .btn-report:hover { filter: grayscale(0); transform: scale(1.2); }
+
+    .nav-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; border-top: 4px solid var(--red); z-index: 1000; }
+    .nav-item { flex: 1; text-align: center; text-decoration: none; color: var(--dark); font-size: 0.7em; padding-top: 15px; font-weight: bold; }
+    .nav-item.active { background: #fff0f0; color: var(--red); }
+
+    #alarmOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--red); color:white; z-index:9999; text-align:center; padding-top:50px; }
+</style>
+
+<div class="header-branding">
+    {{ user.group }} <br> <small style="font-size: 0.6em;">Einsatz-Zentrale</small>
+</div>
+
+<div class="dashboard-container">
     <div class="card">
-        <h3>🚨 Alarm auslösen</h3>
+        <h3>🚨 Notfall-Alarm</h3>
+        <label>Zieleinheit:</label>
         <select id="target">
             <option value="all">ALLE MITGLIEDER</option>
             {% for m in members_emails if m != session['email'] %}
             <option value="{{ m }}">{{ all_users[m]['name'] }}</option>
             {% endfor %}
         </select>
-        <input type="text" id="msg" placeholder="Was ist passiert? (z.B. Reanimation)">
-        <div class="gps-row">
-    <input type="checkbox" id="gps" checked>
-    <label for="gps">📍 Standort mitsenden</label>
-    </div>
-    </div>
+        
+        <input type="text" id="msg" placeholder="Meldung (z.B. VU Person klemmt)">
+        
+        <div style="margin: 10px 0;">
+            <input type="checkbox" id="gps" checked style="width: auto;">
+            <label for="gps">📍 Standort mitsenden</label>
+        </div>
+        
         <button class="btn-alarm" onclick="sendAlarm()">ALARM SENDEN</button>
     </div>
 
-    <div style="text-align:center; margin-top:30px;">
-        <button onclick="leaveGroup()" style="background:none; border:none; color:var(--red); font-size:0.9em; cursor:pointer;">🚪 Gruppe verlassen</button>
+    <div class="card">
+        <h3>👥 Einheit / Team</h3>
+        <div class="member-list">
+            {% for m in members_emails %}
+            <div class="member-item">
+                <span>{{ all_users[m]['name'] }} <small style="font-size: 0.7em; color: #666;">({{ all_users[m]['role'] }})</small></span>
+                {% if m != session['email'] %}
+                <button class="btn-report" onclick="reportUser('{{ m }}')" title="Nutzer melden">⚠️</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
-    <div id="alarmOverlay">
-        <h1 style="font-size:3.5em; margin:0;">🚨 EINSATZ</h1>
-        <p id="alarmInfo" style="font-size:1.8em; margin:20px 0;"></p>
-        <div id="mapLink"></div>
-        <button onclick="stopAlarm()" style="background:white; color:var(--red); padding:25px; width:100%; border:none; border-radius:15px; margin-top:30px; font-weight:bold; font-size:1.3em;">VERSTANDEN / STOPP</button>
+    <div style="text-align:center; margin-top:10px;">
+        <button onclick="leaveGroup()" style="background:none; border:none; color:#666; font-size:0.8em; cursor:pointer; text-decoration: underline;">Gruppe verlassen</button>
     </div>
+</div>
 
-    <nav class="nav-bar">
-    <a href="/dashboard" class="nav-item">🏠<br>Home</a>
-    <a href="/alarms" class="nav-item active">🚨<br>Alarme</a>
-    <a href="/chat" class="nav-item">💬<br>Chat</a>
+<div id="alarmOverlay">
+    <h1 style="font-size:3em; margin:0; animation: blink 0.5s infinite;">🚨 EINSATZ</h1>
+    <p id="alarmInfo" style="font-size:1.5em; margin:20px; font-weight: bold;"></p>
+    <div id="mapLink" style="margin-bottom: 20px;"></div>
+    <button onclick="stopAlarm()" style="background:var(--dark); color:white; padding:25px; width:90%; border:none; border-radius:5px; font-weight:bold; font-size:1.2em; border: 2px solid white;">VERSTANDEN / STOPP</button>
+</div>
+
+<nav class="nav-bar">
+    <a href="/dashboard" class="nav-item active">🏠<br>dashboard</a>
+    <a href="/alarm_log" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/chat" class="nav-item">💬<br>CHAT</a>
     {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
-    <a href="/management" class="nav-item">⚙️<br>Admin</a>
+    <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
     {% endif %}
-    <a href="/logout" class="nav-item" style="color: #ff4444;">🚪<br>Ausloggen</a>
-    </nav>
+    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Ausloggen</a>
+</nav>
 
-    <script>
-        const alarmSound = new Audio("/static/audio/alarm.mp3"); alarmSound.loop = true;
-        function initAudio() { alarmSound.play().then(() => { alarmSound.pause(); document.getElementById('unlock').style.display='none'; }); }
+<script>
+    const alarmSound = new Audio("/static/audio/alarm.mp3"); 
+    alarmSound.loop = true;
 
-        function sendAlarm() {
-            const t = document.getElementById('target').value, m = document.getElementById('msg').value;
-            if(document.getElementById('gps').checked) {
-                navigator.geolocation.getCurrentPosition(p => exec(t,m,p.coords.latitude,p.coords.longitude), () => exec(t,m,null,null));
-            } else { exec(t,m,null,null); }
+    // Melde-Funktion
+    function reportUser(email) {
+        let reason = prompt("Warum möchtest du diesen Nutzer melden?");
+        if(reason) {
+            fetch('/api/report_user', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({target_email: email, reason: reason})
+            }).then(r => r.json()).then(data => {
+                if(data.status === 'ok') alert("Meldung wurde an den Hauptadmin gesendet.");
+            });
         }
-        function exec(t, m, la, lo) {
-    // Visuelles Feedback sofort geben
-    const btn = document.querySelector('.btn-alarm');
-    const originalText = btn.innerText;
-    btn.innerText = "SENDET...";
-    btn.style.background = "orange";
+    }
 
-    fetch('/api/trigger_alarm', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({target: t, message: m, lat: la, lng: lo})
-    }).then(() => {
-        // Sofort zurücksetzen ohne blockierendes Alert-Fenster
-        btn.innerText = "VERSENDET! ✅";
-        btn.style.background = "green";
-        setTimeout(() => {
-            btn.innerText = originalText;
-            btn.style.background = "";
-            document.getElementById('msg').value = ""; // Feld leeren
-        }, 2000);
-    });
-}
+    // 1. Funktion zum Senden eines Alarms
+    function triggerAlarm(msg) {
+        fetch('/api/send_alarm', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ message: msg })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'ok') {
+                alert("ALARM GESENDET!");
+                location.reload(); // Seite neu laden um Log zu sehen
+            }
+        });
+    }
 
-        setInterval(() => {
-            fetch('/api/check_alarm').then(r=>r.json()).then(d => {
-                if(d.active) {
-                    document.getElementById('alarmOverlay').style.display='block';
-                    document.getElementById('alarmInfo').innerText = d.from + ": " + d.msg;
-                    if(d.lat) document.getElementById('mapLink').innerHTML = `<a href="https://www.google.com/maps?q=${d.lat},${d.lng}" target="_blank" style="color:yellow; font-weight:bold; font-size:1.2em;">📍 EINSATZORT ANZEIGEN</a>`;
-                    alarmSound.play();
+    // 2. Funktion die prüft, ob ein Alarm für MICH vorliegt
+    function checkIncomingAlarm() {
+        fetch('/api/get_my_status') // Du musst diese Route noch in app.py einbauen (siehe unten)
+            .then(res => res.json())
+            .then(data => {
+                if (data.active_alarm) {
+                    const overlay = document.getElementById('alarmOverlay');
+                    if(overlay) {
+                        overlay.style.display = 'block';
+                        document.getElementById('alarmText').innerText = data.active_alarm.message;
+                        // Sound abspielen wenn gewünscht
+                    }
                 }
             });
-        }, 3000);
+    }
 
-        function stopAlarm() { fetch('/api/stop_alarm',{method:'POST'}).then(() => { alarmSound.pause(); document.getElementById('alarmOverlay').style.display='none'; }); }
-        function leaveGroup() { if(confirm("Gruppe wirklich verlassen?")) fetch('/api/leave_group',{method:'POST'}).then(() => window.location.href="/group-menu"); }
-    </script>
+    // Alle 3 Sekunden prüfen
+    setInterval(checkIncomingAlarm, 3000);
+
+    function sendAlarm() {
+        const t = document.getElementById('target').value, m = document.getElementById('msg').value;
+        const btn = document.querySelector('.btn-alarm');
+        btn.innerText = "SENDE...";
+        btn.style.background = "orange";
+
+        if(document.getElementById('gps').checked) {
+            navigator.geolocation.getCurrentPosition(p => exec(t,m,p.coords.latitude,p.coords.longitude), () => exec(t,m,null,null));
+        } else { exec(t,m,null,null); }
+    }
+
+    function exec(t, m, la, lo) {
+        fetch('/api/trigger_alarm', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({target: t, message: m, lat: la, lng: lo})
+        }).then(() => {
+            const btn = document.querySelector('.btn-alarm');
+            btn.innerText = "ERFOLGREICH ✅";
+            btn.style.background = "green";
+            setTimeout(() => {
+                btn.innerText = "ALARM SENDEN";
+                btn.style.background = "";
+                document.getElementById('msg').value = "";
+            }, 2000);
+        });
+    }
+
+    // Alarm-Check
+    setInterval(() => {
+        fetch('/api/check_alarm').then(r=>r.json()).then(d => {
+            if(d.active) {
+                document.getElementById('alarmOverlay').style.display='block';
+                document.getElementById('alarmInfo').innerText = d.from + ": " + d.msg;
+                if(d.lat) {
+                    document.getElementById('mapLink').innerHTML = `<a href="https://www.google.com/maps?q=${d.lat},${d.lng}" target="_blank" style="color:white; font-weight:bold; text-decoration: underline;">📍 EINSATZORT AUF KARTE</a>`;
+                }
+                alarmSound.play().catch(() => {});
+            }
+        });
+    }, 3000);
+
+    function stopAlarm() { 
+        fetch('/api/stop_alarm',{method:'POST'}).then(() => { 
+            alarmSound.pause(); 
+            document.getElementById('alarmOverlay').style.display='none'; 
+        }); 
+    }
+
+    function leaveGroup() { 
+        if(confirm("Möchtest du die Gruppe wirklich verlassen?")) {
+            fetch('/api/leave_group',{method:'POST'}).then(() => window.location.href="/group-menu"); 
+        }
+    }
+</script>
+
+<style>
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+</style>
 {% endblock %}

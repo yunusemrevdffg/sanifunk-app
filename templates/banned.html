@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #000; color: #fff; padding: 50px 20px; }
+        .box { border: 2px solid red; padding: 20px; display: inline-block; width: 100%; max-width: 450px; box-sizing: border-box; }
+        
+        /* Chat Bereich */
+        #chat { 
+            background: #111; 
+            height: 250px; 
+            overflow-y: auto; 
+            text-align: left; 
+            padding: 10px; 
+            font-size: 14px; 
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        /* Nachrichten-Blasen */
+        .msg { padding: 8px; border-radius: 5px; max-width: 85%; }
+        .msg.user { background: #333; align-self: flex-end; color: #eee; }
+        .msg.admin { background: #004466; align-self: flex-start; border-left: 3px solid #0099ff; }
+        
+        .time { font-size: 10px; color: #888; display: block; margin-top: 4px; }
+        .sender-name { font-weight: bold; font-size: 11px; display: block; margin-bottom: 2px; }
+
+        input { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; background: #222; border: 1px solid #444; color: white; }
+        button { width: 100%; padding: 12px; background: red; color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:hover { background: #cc0000; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1 style="color:red; margin-top:0;">ZUGRIFF GESPERRT</h1>
+        <p>Dein Account wurde deaktiviert.</p>
+        
+        <div id="chat">
+            {% if BAN_CHATS[session['email']] %}
+                {% for msg in BAN_CHATS[session['email']] %}
+                    <div class="msg {% if msg.is_admin %}admin{% else %}user{% endif %}">
+                        <span class="sender-name">
+                            {% if msg.is_admin %}DIREKTION{% else %}DU{% endif %}
+                        </span>
+                        {{ msg.message }}
+                        <span class="time">{{ msg.time }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div style="color:#555; text-align:center; margin-top:80px;">Keine Nachrichten vorhanden.</div>
+            {% endif %}
+        </div>
+
+        <input type="text" id="msg" placeholder="Nachricht an Admin schreiben...">
+        <button onclick="send()">ABSENDEN</button>
+        
+        <br><br>
+        <a href="/logout" style="color:#888; text-decoration:none; font-size: 13px;">Abmelden / Logout</a>
+    </div>
+
+    <script>
+        // Scrollt den Chat nach ganz unten beim Laden
+        const chatDiv = document.getElementById('chat');
+        chatDiv.scrollTop = chatDiv.scrollHeight;
+
+        function send() {
+            let m = document.getElementById('msg').value;
+            if(!m) return;
+
+            fetch('/api/send_ban_appeal', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: m})
+            }).then(res => res.json()).then(data => {
+                if(data.status === 'ok') {
+                    // Seite neu laden, um die Nachricht im Verlauf anzuzeigen
+                    location.reload();
+                }
+            });
+        }
+
+        // Drücken der Enter-Taste zum Senden
+        document.getElementById('msg').addEventListener("keyup", function(event) {
+            if (event.key === "Enter") {
+                send();
+            }
+        });
+    </script>
+</body>
+</html>

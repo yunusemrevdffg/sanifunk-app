@@ -3,22 +3,41 @@
         "name": "yunusemre admin",
         "password": "yunuspro8.",
         "role": "HAUPTADMIN",
-        "group": null,
-        "active_alarm": null
+        "group": "Sanifunk",
+        "active_alarm": {
+            "sender": "yunusemre güvercin",
+            "message": "cdsfgh",
+            "lat": 50.73599888548165,
+            "lng": 7.0498744867455,
+            "time": "01:10",
+            "date": "05.01.2026"
+        },
+        "banned": false
     },
     "yunusemreguevercin11@gmail.com": {
         "name": "yunusemre güvercin",
         "password": "yunuspro8.",
         "role": "ADMIN",
-        "group": null,
-        "active_alarm": null
+        "group": "Sanifunk",
+        "active_alarm": {
+            "from_name": "leandro overath",
+            "from_email": "leandro@gmail.com",
+            "to_name": "yunusemre güvercin",
+            "message": "gfdnhj",
+            "lat": 50.73599732101678,
+            "lng": 7.049769273258518,
+            "time": "01:43:23",
+            "date": "05.01.2026"
+        },
+        "banned": false
     },
     "benschoneseiffen@gmail.com": {
         "name": "Ben schöneseiffen",
         "password": "ben18082012",
         "role": "ADMIN",
         "group": null,
-        "active_alarm": null
+        "active_alarm": null,
+        "banned": false
     },
     "benschon@gmail.com": {
         "name": "Ben admin",
@@ -30,8 +49,10 @@
     "leandro@gmail.com": {
         "name": "leandro overath",
         "password": "leandro15.",
-        "role": "ADMIN",
-        "group": null,
-        "active_alarm": null
+        "role": "SANI",
+        "group": "Sanifunk",
+        "active_alarm": null,
+        "banned": false
+        
     }
 }

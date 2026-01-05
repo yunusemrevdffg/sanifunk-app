@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SaniFunk - Registrierung</title>
+    <style>
+        :root { --red: #ff0000; --dark: #000000; --white: #ffffff; }
+        body { 
+            background: var(--dark); 
+            color: var(--white); 
+            font-family: 'Arial Black', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        
+        .reg-card { 
+            background: var(--white); 
+            color: var(--dark); 
+            padding: 30px; 
+            border: 5px solid var(--red); 
+            box-shadow: 10px 10px 0px var(--red);
+            width: 90%; 
+            max-width: 400px; 
+            text-align: center;
+        }
+
+        h2 { 
+            text-transform: uppercase; 
+            border-bottom: 4px solid var(--dark); 
+            padding-bottom: 10px; 
+            margin-top: 0;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0; 
+            border: 3px solid var(--dark); 
+            box-sizing: border-box; 
+            font-weight: bold; 
+            font-size: 1rem;
+        }
+
+        .btn-reg { 
+            width: 100%; 
+            padding: 15px; 
+            background: var(--red); 
+            color: white; 
+            border: 3px solid var(--dark); 
+            font-weight: bold; 
+            text-transform: uppercase;
+            cursor: pointer; 
+            margin-top: 10px;
+            transition: 0.2s;
+        }
+
+        .btn-reg:active { transform: scale(0.98); }
+
+        .footer-link { 
+            margin-top: 20px; 
+            display: block; 
+            color: var(--dark); 
+            text-decoration: none; 
+            font-size: 0.9em; 
+            font-weight: bold;
+        }
+
+        .flash-msg {
+            background: #ffeded;
+            color: var(--red);
+            padding: 10px;
+            border: 2px solid var(--red);
+            margin-bottom: 15px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="reg-card">
+    <h2>NEUER SANITÄTER</h2>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="flash-msg">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="/register" method="POST">
+        <input type="text" name="name" placeholder="DEIN NAME (z.B. J. MUSTERMANN)" required>
+        <input type="email" name="email" placeholder="E-MAIL ADRESSE" required>
+        <input type="password" name="password" placeholder="PASSWORT WÄHLEN" required>
+        <button type="submit" class="btn-reg">ACCOUNT ERSTELLEN</button>
+    </form>
+
+    <a href="/login" class="footer-link">BEREITS REGISTRIERT? LOGIN</a>
+</div>
+
+</body>
+</html>
