@@ -3,7 +3,7 @@
         "name": "yunusemre admin",
         "password": "yunuspro8.",
         "role": "HAUPTADMIN",
-        "group": "Sanifunk",
+        "group": null,
         "active_alarm": {
             "sender": "yunusemre güvercin",
             "message": "cdsfgh",
@@ -18,7 +18,7 @@
         "name": "yunusemre güvercin",
         "password": "yunuspro8.",
         "role": "ADMIN",
-        "group": "Sanifunk",
+        "group": "hi123",
         "active_alarm": {
             "from_name": "leandro overath",
             "from_email": "leandro@gmail.com",
@@ -50,9 +50,8 @@
         "name": "leandro overath",
         "password": "leandro15.",
         "role": "SANI",
-        "group": "Sanifunk",
+        "group": "hi123",
         "active_alarm": null,
         "banned": false
-        
     }
 }

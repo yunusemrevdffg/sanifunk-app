@@ -138,13 +138,21 @@ def group_menu():
                     flash('Falsches Passwort!')
                     return redirect(url_for('group_menu'))
                 
-                if email not in target['members']: target['members'].append(email)
+                # Nutzer zur Mitgliederliste der Gruppe hinzufügen
+                if email not in target['members']: 
+                    target['members'].append(email)
                 
-                # UPDATE: Nur auf SANI setzen, wenn die aktuelle Rolle nicht schon ADMIN oder HAUPTADMIN ist
+                # SICHERHEITS-CHECK FÜR ROLLEN:
+                # Wir holen die aktuelle Rolle des Nutzers
                 current_role = USERS[email].get('role', 'SANI')
-                if current_role not in ['ADMIN', 'HAUPTADMIN']:
+                
+                # Wenn der Nutzer KEIN Hauptadmin und KEIN Admin ist, 
+                # wird er beim Beitritt zum SANI.
+                # Hauptadmins und Admins bleiben unberührt.
+                if current_role not in ['HAUPTADMIN', 'ADMIN']:
                     USERS[email]['role'] = 'SANI'
                 
+                # Gruppe im Nutzerprofil speichern
                 USERS[email]['group'] = g_name
                 
         save_data(USER_FILE, USERS)
@@ -320,18 +328,36 @@ def report_user():
         return jsonify({'status': 'ok'})
     return jsonify({'status': 'error'})
 
-# --- ADMIN ACTIONS (API) ---
 @app.route('/api/admin/update_user', methods=['POST'])
 def update_user():
-    admin = USERS.get(session.get('email'))
-    if not admin or admin['role'] not in ['ADMIN', 'HAUPTADMIN']: abort(403)
+    admin_email = session.get('email')
+    admin = USERS.get(admin_email)
+    
+    # Nur Admins/Hauptadmins dürfen hier überhaupt rein
+    if not admin or admin['role'] not in ['ADMIN', 'HAUPTADMIN']:
+        abort(403)
+        
     data = request.json
-    target = data.get('email')
-    if target in USERS:
-        if 'role' in data: USERS[target]['role'] = data['role']
-        if 'password' in data: USERS[target]['password'] = data['password']
+    target_email = data.get('email')
+    
+    if target_email in USERS:
+        # --- NEU: SCHUTZ FÜR HAUPTADMIN ---
+        if USERS[target_email]['role'] == 'HAUPTADMIN':
+            # Wenn das Ziel ein Hauptadmin ist, darf nichts an der Rolle geändert werden
+            if 'role' in data and data['role'] != 'HAUPTADMIN':
+                return jsonify({'status': 'error', 'message': 'Hauptadmin-Rolle ist gesperrt!'}), 403
+        
+        # Rollen-Update (nur wenn es kein Downgrade für einen Hauptadmin ist)
+        if 'role' in data:
+            USERS[target_email]['role'] = data['role']
+            
+        # Passwort-Update (bleibt erlaubt, falls man es mal vergessen hat)
+        if 'password' in data:
+            USERS[target_email]['password'] = generate_password_hash(data['password'])
+            
         save_data(USER_FILE, USERS)
         return jsonify({'status': 'ok'})
+    
     return jsonify({'status': 'error'})
 
 @app.route('/api/admin/toggle_ban', methods=['POST'])
@@ -368,21 +394,36 @@ def delete_user():
         return jsonify({'status': 'ok'})
     return jsonify({'status': 'error'})
 
-# --- NEU: GRUPPEN LÖSCHEN ---
 @app.route('/api/admin/delete_group', methods=['POST'])
 def delete_group():
-    if USERS.get(session['email'], {}).get('role') != 'HAUPTADMIN': abort(403)
-    g_name = request.json.get('group_name')
+    # Prüfen, ob der User eingeloggt ist
+    admin_email = session.get('email')
+    admin = USERS.get(admin_email)
+
+    # WICHTIG: Erlaubnis nur für HAUPTADMIN
+    if not admin or admin['role'] != 'HAUPTADMIN':
+        abort(403)  # Das erzeugt den "Verboten" Fehler, wenn du kein Hauptadmin bist
+
+    data = request.json
+    g_name = data.get('group_name')
+
     if g_name in GROUPS:
-        for m_email in GROUPS[g_name]['members']:
-            if m_email in USERS:
-                USERS[m_email]['group'] = None
-                USERS[m_email]['role'] = 'SANI'
+        # Alle Mitglieder der Gruppe wieder zu "SANI" machen und gruppenlos stellen
+        for member_email in GROUPS[g_name]['members']:
+            if member_email in USERS:
+                USERS[member_email]['group'] = None
+                # Nur Sanis zurückstufen, andere Admins bleiben Admins (optional)
+                if USERS[member_email]['role'] == 'SANI':
+                    USERS[member_email]['role'] = 'SANI' 
+        
+        # Gruppe löschen
         del GROUPS[g_name]
+        
         save_data(USER_FILE, USERS)
         save_data(GROUP_FILE, GROUPS)
         return jsonify({'status': 'ok'})
-    return jsonify({'status': 'error'})
+    
+    return jsonify({'status': 'error', 'message': 'Gruppe nicht gefunden'})
 
 @app.route('/api/admin/clear_reports', methods=['POST'])
 def clear_reports():

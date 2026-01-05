@@ -1,113 +1,18 @@
 {
-    "Sanifunk": {
+    "hi123": {
         "admin": "yunusemreguevercin11@gmail.com",
         "members": [
-            "leandro@gmail.com",
-            "yunusemreguevercin12@gmail.com",
-            "yunusemreguevercin11@gmail.com"
+            "yunusemreguevercin11@gmail.com",
+            "leandro@gmail.com"
         ],
         "messages": [
             {
-                "sender": "leandro overath",
-                "content": "RFFESGDTZFH",
-                "time": "18:59"
-            },
-            {
-                "sender": "leandro overath",
-                "content": "ewfrtg",
-                "time": "19:01"
-            },
-            {
-                "sender": "leandro overath",
-                "content": "dwefrsg",
-                "time": "00:11"
-            },
-            {
-                "sender": "yunusemre admin",
-                "content": "DFSGRDTF",
-                "time": "00:36"
-            },
-            {
-                "sender": "yunusemre admin",
-                "content": "cvdxbcg",
-                "time": "00:37"
-            },
-            {
                 "sender": "yunusemre güvercin",
-                "content": "vdfgh",
-                "time": "01:10"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "content": "dsv",
-                "time": "01:13"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "content": "esgrdthtfmzg",
-                "time": "01:31"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "content": "sgtrdhzfuzg",
-                "time": "01:31"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "content": "cdsvf",
-                "time": "01:43"
+                "content": "dcsvfbgdnh",
+                "time": "02:22"
             }
         ],
-        "history": [
-            {
-                "from_name": "leandro overath",
-                "from_email": "leandro@gmail.com",
-                "to_name": "yunusemre güvercin",
-                "message": "gfdnhj",
-                "lat": 50.73599732101678,
-                "lng": 7.049769273258518,
-                "time": "01:43:23",
-                "date": "05.01.2026"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "message": "vfedbg",
-                "lat": 50.73599732101678,
-                "lng": 7.049769273258518,
-                "time": "01:33",
-                "date": "05.01.2026"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "message": "vfedbg",
-                "lat": 50.735992,
-                "lng": 7.049767,
-                "time": "01:13",
-                "date": "05.01.2026"
-            },
-            {
-                "sender": "yunusemre güvercin",
-                "message": "cdsfgh",
-                "lat": 50.73599888548165,
-                "lng": 7.0498744867455,
-                "time": "01:10",
-                "date": "05.01.2026"
-            },
-            {
-                "from": "yunusemre admin",
-                "msg": "cdsfgh",
-                "lat": 50.73599888548165,
-                "lng": 7.0498744867455,
-                "time": "00:36",
-                "date": "05.01.2026"
-            },
-            {
-                "sender": "leandro overath",
-                "message": "DSFAGG",
-                "time": "00:23",
-                "date": "05.01.2026"
-            }
-        ],
+        "history": [],
         "type": "private",
         "password": "BBG.SCHULEN"
     }
