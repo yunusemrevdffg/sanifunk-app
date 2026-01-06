@@ -197,19 +197,20 @@ def save_untis():
 def dashboard():
     if 'email' not in session: 
         return redirect(url_for('login'))
-    
     user = USERS.get(session['email'])
-    if not user:
-        return redirect(url_for('login'))
-        
+    if not user: 
+        return redirect(url_for('logout'))
+    
     group_name = user.get('group')
-    # Wenn der User noch keine Gruppe hat, schick ihn zum Menü
     if not group_name or group_name not in GROUPS: 
         return redirect(url_for('group_menu'))
-        
+    
     group = GROUPS.get(group_name)
-    return render_template('dashboard.html', user=user, members_emails=group.get('members', []), all_users=USERS)
-
+    # Wir senden hier NUR user, members_emails und all_users
+    return render_template('dashboard.html', 
+                           user=user, 
+                           members_emails=group.get('members', []), 
+                           all_users=USERS)
 
 
 @app.route('/group_menu', methods=['GET', 'POST'])

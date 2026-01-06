@@ -123,7 +123,7 @@
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
 
-    // Erlaubt Audio nach dem ersten Klick
+    // Erlaubt Audio nach dem ersten Klick (Wichtig für Handys)
     document.addEventListener('click', () => {
         alarmSound.play().then(() => { alarmSound.pause(); }).catch(e => {});
     }, { once: true });
@@ -138,18 +138,22 @@
                     document.getElementById('alarmFrom').innerText = data.from;
                     document.getElementById('alarmText').innerText = data.msg;
                     
+                    // KORREKTUR: Backticks benutzen und ${} für JS Variablen
                     if (data.lat && data.lng) {
                         document.getElementById('mapArea').innerHTML = `
                             <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" 
-                               target="_blank" style="color:white; font-weight:bold;">
+                               target="_blank" style="color:white; font-weight:bold; display:block; margin-top:20px;">
                                📍 EINSATZORT ANZEIGEN
                             </a>`;
+                    } else {
+                        document.getElementById('mapArea').innerHTML = "";
                     }
+
                     overlay.style.display = 'block';
-                    alarmSound.play().catch(e => {});
+                    alarmSound.play().catch(e => console.log("Sound-Blockade"));
                 }
             }
-        });
+        }).catch(err => console.error("Fehler beim Alarm-Check"));
     }, 3000);
 
     function stopAlarm() {
@@ -163,12 +167,18 @@
     function sendAlarm() {
         const t = document.getElementById('target').value;
         const m = document.getElementById('msg').value || "EINSATZ-ALARM";
+        const btn = document.getElementById('sendBtn');
+        btn.innerText = "SENDE...";
+
         if (document.getElementById('gps').checked) {
             navigator.geolocation.getCurrentPosition(
                 p => exec(t, m, p.coords.latitude, p.coords.longitude),
-                () => exec(t, m, null, null)
+                () => exec(t, m, null, null),
+                { timeout: 5000 }
             );
-        } else { exec(t, m, null, null); }
+        } else { 
+            exec(t, m, null, null); 
+        }
     }
 
     function exec(t, m, la, lo) {
@@ -176,6 +186,8 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ target: t, message: m, lat: la, lng: lo })
-        }).then(() => { location.reload(); });
+        }).then(() => { 
+            location.reload(); 
+        });
     }
 </script>
