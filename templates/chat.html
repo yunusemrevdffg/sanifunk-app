@@ -55,56 +55,72 @@
 
 
     <script>
-        let lastMsgCount = {{ messages|length }};
-        const beep = document.getElementById('beepSound');
-        const container = document.getElementById('chatContainer');
+    let lastMsgCount = {{ messages|length }};
+    const beep = document.getElementById('beepSound');
+    const container = document.getElementById('chatContainer');
 
-        window.scrollTo(0, document.body.scrollHeight);
+    // Sofort nach unten scrollen beim Laden
+    window.scrollTo(0, document.body.scrollHeight);
 
-        function s() {
-            const input = document.getElementById('t');
-            const text = input.value.trim();
-            if (!text) return;
-            
-            fetch('/api/send_message', {
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: text})
-            }).then(res => res.json()).then(data => {
-                if(data.status === 'ok') {
-                    input.value = ''; 
-                    loadMessages();
-                }
-            });
-        }
+    function s() {
+        const input = document.getElementById('t');
+        const text = input.value.trim();
+        if (!text) return;
+        
+        fetch('/api/send_message', {
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: text})
+        }).then(res => res.json()).then(data => {
+            if(data.status === 'ok') {
+                input.value = ''; 
+                loadMessages();
+            }
+        });
+    }
 
-        document.getElementById('t').addEventListener('keypress', (e) => { if (e.key === 'Enter') s(); });
+    document.getElementById('t').addEventListener('keypress', (e) => { if (e.key === 'Enter') s(); });
 
-        function loadMessages() {
-            fetch('/api/get_messages')
-                .then(res => res.json())
-                .then(messages => {
-                    if (messages.length > lastMsgCount) {
-                        const lastMsg = messages[messages.length - 1];
-                        if (lastMsg.sender !== "{{ user.name }}") {
+    function loadMessages() {
+        fetch('/api/get_messages')
+            .then(res => res.json())
+            .then(messages => {
+                if (messages.length > lastMsgCount) {
+                    const lastMsg = messages[messages.length - 1];
+
+                    // PRÜFUNG: Ist die Nachricht von jemand anderem?
+                    if (lastMsg.sender !== "{{ user.name }}") {
+                        
+                        // 1. Android App informieren (Vibration + System-Pling)
+                        if (typeof AndroidInterface !== 'undefined') {
+                            AndroidInterface.newChatMessage(lastMsg.sender, lastMsg.content);
+                        } else {
+                            // 2. Browser-Fallback (nur Ton)
                             beep.play().catch(e => {});
                         }
-
-                        let html = '';
-                        messages.forEach(m => {
-                            const isOwn = m.sender === "{{ user.name }}";
-                            html += `<div class="msg-bubble ${isOwn ? 'own' : ''}">
-                                <small class="msg-info">${m.sender} • ${m.time}</small>
-                                <div class="msg-text">${m.content}</div>
-                            </div>`;
-                        });
-                        container.innerHTML = html;
-                        lastMsgCount = messages.length;
-                        window.scrollTo(0, document.body.scrollHeight);
                     }
-                });
-        }
-        setInterval(loadMessages, 2000);
-    </script>
+
+                    // HTML der Nachrichten aktualisieren
+                    let html = '';
+                    messages.forEach(m => {
+                        const isOwn = m.sender === "{{ user.name }}";
+                        html += `<div class="msg-bubble ${isOwn ? 'own' : ''}">
+                            <small class="msg-info">${m.sender} • ${m.time}</small>
+                            <div class="msg-text">${m.content}</div>
+                        </div>`;
+                    });
+                    
+                    container.innerHTML = html;
+                    lastMsgCount = messages.length;
+                    
+                    // Sanftes Scrollen nach unten bei neuen Nachrichten
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+            });
+    }
+
+    // Alle 2 Sekunden prüfen
+    setInterval(loadMessages, 2000);
+</script>
 </body>
 </html>

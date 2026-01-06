@@ -88,6 +88,7 @@
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
 
+    // Erlaubt Audio nach dem ersten Klick (für Browser)
     document.addEventListener('click', () => {
         alarmSound.play().then(() => { alarmSound.pause(); }).catch(e => {});
     }, { once: true });
@@ -101,6 +102,7 @@
                 if (overlay.style.display !== 'block') {
                     document.getElementById('alarmFrom').innerText = data.from;
                     document.getElementById('alarmText').innerText = data.msg;
+                    
                     if (data.lat && data.lng) {
                         document.getElementById('mapArea').innerHTML = `
                             <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" 
@@ -108,8 +110,17 @@
                                📍 EINSATZORT ANZEIGEN
                             </a>`;
                     }
+                    
                     overlay.style.display = 'block';
-                    alarmSound.play().catch(e => {});
+
+                    // --- ANDROID INTEGRATION ---
+                    // Hier rufen wir das Interface deiner Android-App auf!
+                    if (typeof AndroidInterface !== 'undefined') {
+                        AndroidInterface.triggerAlarm("🚨 EINSATZ-ALARM", data.msg);
+                    } else {
+                        // Falls wir im normalen Browser sind, spielen wir den Web-Sound
+                        alarmSound.play().catch(e => {});
+                    }
                 }
             }
         });
