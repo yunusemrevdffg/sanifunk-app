@@ -87,37 +87,28 @@
 <script>
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
-    let firstCheck = true; // Sperre gegen Fake-Alarm
-
-    document.addEventListener('click', () => {
-        alarmSound.play().then(() => { alarmSound.pause(); }).catch(e => {});
-    }, { once: true });
+    let firstCheck = true;
 
     setInterval(() => {
         fetch('/api/check_alarm')
         .then(r => r.json())
         .then(data => {
             if (firstCheck) { firstCheck = false; return; }
-
             if (data.active) {
                 const overlay = document.getElementById('alarmOverlay');
                 if (overlay.style.display !== 'block') {
                     document.getElementById('alarmFrom').innerText = data.from;
                     document.getElementById('alarmText').innerText = data.msg;
-                    
                     if (data.lat && data.lng) {
-                        // FIX: Dieser Link wird von der App abgefangen und in Google Maps geöffnet
+                        const mapUrl = `http://googleusercontent.com/maps.google.com/6{data.lat},${data.lng}`;
                         document.getElementById('mapArea').innerHTML = `
-                            <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" 
-                               style="background:white; color:black; padding:15px; text-decoration:none; display:block; margin:20px auto; width:80%; border:3px solid black; font-weight:bold; text-align:center;">
+                            <a href="${mapUrl}" style="background:white; color:black; padding:15px; text-decoration:none; display:block; margin:20px auto; width:80%; border:3px solid black; font-weight:bold; text-align:center;">
                                📍 IN GOOGLE MAPS ÖFFNEN
                             </a>`;
                     }
-                    
                     overlay.style.display = 'block';
-
                     if (typeof AndroidInterface !== 'undefined') {
-                        AndroidInterface.triggerAlarm("🚨 EINSATZ-ALARM", data.msg);
+                        AndroidInterface.triggerAlarm("🚨 EINSATZ", data.msg);
                     } else {
                         alarmSound.play().catch(e => {});
                     }
@@ -130,12 +121,7 @@
         fetch('/api/stop_alarm', { method: 'POST' }).then(() => {
             alarmSound.pause();
             alarmSound.currentTime = 0;
-
-            // Android-Sound stoppen
-            if (typeof AndroidInterface !== 'undefined') {
-                AndroidInterface.stopAndroidAlarm();
-            }
-
+            if (typeof AndroidInterface !== 'undefined') AndroidInterface.stopAndroidAlarm();
             document.getElementById('alarmOverlay').style.display = 'none';
         });
     }
