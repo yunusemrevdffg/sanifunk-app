@@ -5,45 +5,17 @@
 <style>
     :root { --red: #ff0000; --dark: #000000; --white: #ffffff; }
     body { background: #f4f4f4; padding-bottom: 90px; font-family: 'Arial Black', sans-serif; overflow-x: hidden; }
-    
     .header-branding { background: var(--red); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--dark); text-transform: uppercase; }
     .dashboard-container { padding: 15px; max-width: 800px; margin: auto; }
-    
     .card { background: var(--white); border: 3px solid var(--dark); padding: 15px; margin-bottom: 20px; box-shadow: 6px 6px 0px var(--red); }
     .card h3 { margin-top: 0; border-bottom: 2px solid var(--dark); padding-bottom: 5px; text-transform: uppercase; }
-    
     input, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid var(--dark); font-weight: bold; box-sizing: border-box; }
-    
     .btn-alarm { width: 100%; padding: 20px; font-size: 1.3em; background: var(--red); color: white; border: 3px solid var(--dark); font-weight: bold; cursor: pointer; text-transform: uppercase; }
-
-    /* --- DAS GROSSE ALARM-FENSTER (OVERLAY) --- */
-    #alarmOverlay { 
-        display: none; 
-        position: fixed; 
-        top: 0; left: 0; 
-        width: 100vw; height: 100vh; 
-        background: var(--red); 
-        color: white; 
-        z-index: 99999; 
-        text-align: center; 
-        padding-top: 40px;
-        box-sizing: border-box;
-    }
-
+    #alarmOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--red); color: white; z-index: 99999; text-align: center; padding-top: 40px; box-sizing: border-box; }
     .alarm-box { padding: 20px; }
     .blink { animation: blinker 0.6s linear infinite; }
     @keyframes blinker { 50% { opacity: 0; } }
-
-    .btn-stop { 
-        background: white; color: var(--red); 
-        padding: 25px; width: 90%; 
-        border: 4px solid var(--dark); 
-        font-weight: bold; font-size: 1.5em; 
-        margin-top: 30px; cursor: pointer;
-        text-transform: uppercase;
-    }
-
-    /* Navigation */
+    .btn-stop { background: white; color: var(--red); padding: 25px; width: 90%; border: 4px solid var(--dark); font-weight: bold; font-size: 1.5em; margin-top: 30px; cursor: pointer; text-transform: uppercase; }
     .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: white; display: flex; border-top: 4px solid var(--red); z-index: 1000; }
     .nav-item { flex: 1; text-align: center; text-decoration: none; color: var(--dark); font-size: 0.7em; padding-top: 15px; font-weight: bold; text-transform: uppercase; }
 </style>
@@ -64,14 +36,11 @@
                 {% endif %}
             {% endfor %}
         </select>
-        
         <input type="text" id="msg" placeholder="Grund (z.B. Kreislaufkollaps)">
-        
         <div style="margin: 10px 0;">
             <input type="checkbox" id="gps" checked style="width: auto;">
             <label for="gps">📍 Standort mitsenden</label>
         </div>
-        
         <button class="btn-alarm" id="sendBtn" onclick="sendAlarm()">ALARM AUSLÖSEN</button>
     </div>
 
@@ -92,26 +61,22 @@
     <div class="alarm-box">
         <h1 class="blink" style="font-size: 3.5em; margin: 0;">🚨 EINSATZ</h1>
         <hr style="border: 2px solid white; margin: 20px 0;">
-        
         <div id="alarmData">
             <p style="font-size: 1.2em; text-transform: uppercase;">Meldung von:</p>
             <h2 id="alarmFrom" style="background: white; color: var(--red); display: inline-block; padding: 5px 15px;">-</h2>
-            
             <p style="font-size: 1.2em; text-transform: uppercase; margin-top: 20px;">Grund:</p>
             <h2 id="alarmText" style="font-size: 2em;">-</h2>
         </div>
-
         <div id="mapArea"></div>
-
         <button class="btn-stop" onclick="stopAlarm()">✅ VERSTANDEN / STOPP</button>
     </div>
 </div>
 
 <nav class="nav-bar">
     <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
-    <a href="/untis" class="nav-item active">📅<br>Untis</a>
-    <a href="/profile" class="nav-item active">👤<br>Profil</a>
-    <a href="/alarm_log" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/untis" class="nav-item">📅<br>Untis</a>
+    <a href="/profile" class="nav-item">👤<br>Profil</a>
+    <a href="/alarm_log" class="nav-item">🚨<br>Alarme</a>
     <a href="/chat" class="nav-item">💬<br>CHAT</a>
     {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
     <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
@@ -123,7 +88,6 @@
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
 
-    // Erlaubt Audio nach dem ersten Klick (Wichtig für Handys)
     document.addEventListener('click', () => {
         alarmSound.play().then(() => { alarmSound.pause(); }).catch(e => {});
     }, { once: true });
@@ -137,23 +101,18 @@
                 if (overlay.style.display !== 'block') {
                     document.getElementById('alarmFrom').innerText = data.from;
                     document.getElementById('alarmText').innerText = data.msg;
-                    
-                    // KORREKTUR: Backticks benutzen und ${} für JS Variablen
                     if (data.lat && data.lng) {
                         document.getElementById('mapArea').innerHTML = `
                             <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" 
                                target="_blank" style="color:white; font-weight:bold; display:block; margin-top:20px;">
                                📍 EINSATZORT ANZEIGEN
                             </a>`;
-                    } else {
-                        document.getElementById('mapArea').innerHTML = "";
                     }
-
                     overlay.style.display = 'block';
-                    alarmSound.play().catch(e => console.log("Sound-Blockade"));
+                    alarmSound.play().catch(e => {});
                 }
             }
-        }).catch(err => console.error("Fehler beim Alarm-Check"));
+        });
     }, 3000);
 
     function stopAlarm() {
@@ -167,18 +126,12 @@
     function sendAlarm() {
         const t = document.getElementById('target').value;
         const m = document.getElementById('msg').value || "EINSATZ-ALARM";
-        const btn = document.getElementById('sendBtn');
-        btn.innerText = "SENDE...";
-
         if (document.getElementById('gps').checked) {
             navigator.geolocation.getCurrentPosition(
                 p => exec(t, m, p.coords.latitude, p.coords.longitude),
-                () => exec(t, m, null, null),
-                { timeout: 5000 }
+                () => exec(t, m, null, null)
             );
-        } else { 
-            exec(t, m, null, null); 
-        }
+        } else { exec(t, m, null, null); }
     }
 
     function exec(t, m, la, lo) {
@@ -186,8 +139,8 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ target: t, message: m, lat: la, lng: lo })
-        }).then(() => { 
-            location.reload(); 
-        });
+        }).then(() => { location.reload(); });
     }
 </script>
+
+{% endblock %}
