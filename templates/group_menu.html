@@ -1,48 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .hidden { display: none; }
+        .active { border-bottom: 3px solid var(--red); font-weight: bold; }
+        .badge { padding: 2px 5px; border-radius: 3px; font-size: 0.8em; }
+        .badge-private { background: #ffebee; color: #c62828; }
+        .badge-public { background: #e8f5e9; color: #2e7d32; }
+    </style>
 </head>
 <body>
     <div class="header">GRUPPEN-MENÜ</div>
+    
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div style="background: #ffcccc; color: red; padding: 10px; text-align: center;">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
     <div class="group-tabs">
         <button class="tab-btn active" onclick="show('join')">Beitreten</button>
         <button class="tab-btn" onclick="show('create')">Erstellen</button>
     </div>
 
     <div id="joinSection" style="padding:15px;">
+        {% if not groups %}
+            <p style="text-align:center; color:gray;">Keine Gruppen verfügbar.</p>
+        {% endif %}
+        
         {% for name, data in groups.items() %}
-        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">
             <div>
                 <strong>{{ name }}</strong>
                 <span class="badge {% if data.type=='private' %}badge-private{% else %}badge-public{% endif %}">
-                    {% if data.type=='private' %}🔒{% else %}🔓{% endif %}
+                    {% if data.type=='private' %}🔒 Privat{% else %}🔓 Offen{% endif %}
                 </span>
             </div>
-            <form action="/group-menu" method="POST" style="display:flex; gap:5px;">
+            
+            <form action="/group_menu" method="POST" style="display:flex; gap:5px;">
                 <input type="hidden" name="action" value="join">
                 <input type="hidden" name="group_name" value="{{ name }}">
+                
                 {% if data.type == 'private' %}
-                <input type="password" name="join_password" placeholder="PW" required style="width:80px; margin:0;">
+                <input type="password" name="join_password" placeholder="PW" required style="width:70px; margin:0; padding:5px;">
                 {% endif %}
-                <button type="submit" style="background:var(--red); color:white; border:none; padding:8px; border-radius:5px;">Join</button>
+                
+                <button type="submit" style="background:var(--red); color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer;">Join</button>
             </form>
         </div>
         {% endfor %}
     </div>
 
     <div id="createSection" class="hidden" style="padding:15px;">
-        <form action="/group-menu" method="POST" class="card">
+        <form action="/group_menu" method="POST" class="card" style="padding:15px; border:1px solid #ccc; border-radius:8px;">
             <input type="hidden" name="action" value="create">
-            <input type="text" name="group_name" placeholder="Gruppenname" required>
-            <select name="group_type" id="gt" onchange="document.getElementById('pwf').style.display=(this.value=='private'?'block':'none')">
-                <option value="public">Öffentlich</option>
-                <option value="private">Privat (mit Passwort)</option>
+            <label>Name der neuen Gruppe:</label>
+            <input type="text" name="group_name" placeholder="z.B. Sani-Nord" required style="width:100%; margin-bottom:10px; padding:8px;">
+            
+            <label>Sichtbarkeit:</label>
+            <select name="group_type" id="gt" onchange="togglePwField(this.value)" style="width:100%; margin-bottom:10px; padding:8px;">
+                <option value="public">🔓 Öffentlich (Jeder kann beitreten)</option>
+                <option value="private">🔒 Privat (Passwort erforderlich)</option>
             </select>
-            <div id="pwf" style="display:none;"><input type="text" name="group_password" placeholder="Gruppen-Passwort festlegen"></div>
-            <button type="submit" class="btn-alarm" style="margin-top:10px;">ERSTELLEN</button>
+            
+            <div id="pwf" style="display:none;">
+                <label>Gruppen-Passwort festlegen:</label>
+                <input type="text" name="group_password" placeholder="Passwort wählen" style="width:100%; margin-bottom:10px; padding:8px;">
+            </div>
+            
+            <button type="submit" class="btn-alarm" style="width:100%; padding:12px; background:var(--red); color:white; border:none; border-radius:5px; font-weight:bold; cursor:pointer;">GRUPPE ERSTELLEN</button>
         </form>
     </div>
 
@@ -50,7 +80,15 @@
         function show(s){
             document.getElementById('joinSection').classList.toggle('hidden', s!='join');
             document.getElementById('createSection').classList.toggle('hidden', s!='create');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(s)));
+            
+            // Tab-Buttons optisch umschalten
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons[0].classList.toggle('active', s=='join');
+            buttons[1].classList.toggle('active', s=='create');
+        }
+
+        function togglePwField(val) {
+            document.getElementById('pwf').style.display = (val == 'private' ? 'block' : 'none');
         }
     </script>
 </body>

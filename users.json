@@ -3,7 +3,7 @@
         "name": "yunusemre admin",
         "password": "yunuspro8.",
         "role": "HAUPTADMIN",
-        "group": null,
+        "group": "null",
         "active_alarm": {
             "sender": "yunusemre güvercin",
             "message": "cdsfgh",
@@ -14,44 +14,38 @@
         },
         "banned": false
     },
-    "yunusemreguevercin11@gmail.com": {
-        "name": "yunusemre güvercin",
-        "password": "yunuspro8.",
-        "role": "ADMIN",
-        "group": "hi123",
-        "active_alarm": {
-            "from_name": "leandro overath",
-            "from_email": "leandro@gmail.com",
-            "to_name": "yunusemre güvercin",
-            "message": "gfdnhj",
-            "lat": 50.73599732101678,
-            "lng": 7.049769273258518,
-            "time": "01:43:23",
-            "date": "05.01.2026"
-        },
-        "banned": false
-    },
-    "benschoneseiffen@gmail.com": {
-        "name": "Ben schöneseiffen",
-        "password": "ben18082012",
-        "role": "ADMIN",
-        "group": null,
-        "active_alarm": null,
-        "banned": false
-    },
     "benschon@gmail.com": {
         "name": "Ben admin",
         "password": "ben18082012",
         "role": "HAUPTADMIN",
         "group": null,
-        "active_alarm": null
+        "active_alarm": null,
+        "banned": false
     },
     "leandro@gmail.com": {
         "name": "leandro overath",
         "password": "leandro15.",
         "role": "SANI",
-        "group": "hi123",
-        "active_alarm": null,
+        "group": null,
+        "active_alarm": {
+            "from_name": "yunusemre güvercin",
+            "message": "",
+            "lat": 50.73598756574325,
+            "lng": 7.049657982495988,
+            "time": "16:11:41",
+            "date": "06.01.2026"
+        },
         "banned": false
+    },
+    "yunusemreguevercin11@gmail.com": {
+        "name": "yunusemre güvercin",
+        "password": "yunuspro8.",
+        "role": "ADMIN",
+        "group": "test",
+        "active_alarm": null,
+        "banned": false,
+        "untis_user": "güveyun8142",
+        "untis_id": "1613",
+        "untis_password": "yunuspro8."
     }
 }

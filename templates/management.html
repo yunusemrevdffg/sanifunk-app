@@ -1,206 +1,156 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-    :root { --red: #ff0000; --dark: #000000; --yellow: #ffcc00; --blue: #007bff; --light-blue: #d1ecf1; }
-    body { background: #f4f4f4; padding-bottom: 80px; font-family: 'Arial Black', sans-serif; }
-    .admin-header { background: var(--red); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--dark); }
-    .label-bar { background: var(--dark); color: white; padding: 10px; font-size: 0.8em; text-transform: uppercase; display: flex; justify-content: space-between; }
+    :root { --red: #ff0000; --dark: #000; --blue: #007bff; --green: #28a745; --orange: #ff9800; }
+    body { background: #f4f4f4; padding-bottom: 110px; font-family: 'Arial Black', sans-serif; }
     
-    .section-title { padding: 10px 15px; border-left: 5px solid var(--red); margin: 20px 10px; background: white; text-transform: uppercase; }
+    .admin-header { background: var(--dark); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--red); }
+    .section-title { padding: 12px 15px; border-left: 8px solid var(--red); margin: 20px 10px 10px 10px; background: white; text-transform: uppercase; font-size: 1.1em; }
+    
+    .card { background: white; border: 2px solid var(--dark); margin: 15px 10px; padding: 15px; box-shadow: 5px 5px 0px var(--dark); position: relative; }
+    .report-card { border-color: var(--orange); box-shadow: 5px 5px 0px var(--orange); background: #fffdf9; }
+    .owner-card { border: 3px solid var(--blue); box-shadow: 5px 5px 0px var(--blue); }
+    .card.banned { background: #e0e0e0; opacity: 0.9; }
+    
+    .info-box { background: #eee; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 0.85em; border: 1px solid #ccc; max-height: 150px; overflow-y: auto; }
+    .pw-input { width: 100%; padding: 8px; margin-top: 5px; border: 2px solid #000; font-family: monospace; box-sizing: border-box; }
+    
+    .actions { display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap; }
+    .actions select, .actions .btn-action { padding: 10px; font-weight: bold; border: 2px solid var(--dark); cursor: pointer; font-size: 0.75em; text-transform: uppercase; text-decoration: none; color: black; background: white; }
+    
+    .btn-save { background: var(--green) !important; color: white !important; width: 100%; margin-top: 5px; }
+    .btn-ban { background: var(--dark) !important; color: white !important; }
+    .btn-unban { background: var(--orange) !important; color: white !important; }
+    .btn-chat { background: var(--blue) !important; color: white !important; flex: 1; text-align: center; }
+    .btn-del { background: var(--red) !important; color: white !important; width: 100%; }
+    .btn-user-del { background: #000 !important; color: var(--red) !important; border: 2px solid var(--red) !important; width: 100%; margin-top: 10px; }
 
-    /* Karten Design */
-    .card { background: white; border: 2px solid var(--dark); margin: 15px 10px; padding: 15px; box-shadow: 5px 5px 0px var(--red); }
-    .card.banned { border-color: #666; opacity: 0.8; }
-    .card b { font-size: 1.1em; display: block; }
-    .info-tag { background: #eee; padding: 2px 6px; font-family: monospace; font-size: 0.85em; border: 1px dashed #999; margin-top: 5px; display: inline-block; }
-
-    /* Melde-Karten */
-    .report-card { background: var(--yellow); border: 3px solid var(--dark); padding: 15px; margin: 15px 10px; box-shadow: 8px 8px 0px var(--dark); }
-    .report-item { background: white; border: 1px solid black; padding: 10px; margin-top: 10px; font-family: sans-serif; font-size: 0.9em; }
-
-    /* Buttons & Actions */
-    .actions { display: flex; gap: 5px; margin-top: 15px; flex-wrap: wrap; }
-    .actions select, .actions button { padding: 8px; font-weight: bold; border: 2px solid var(--dark); cursor: pointer; font-family: 'Arial', sans-serif; font-size: 0.8em; }
-    .btn-ban { background: var(--dark); color: white; }
-    .btn-del { background: #ff4444; color: white; }
-    .btn-msg { background: var(--blue); color: white; }
-    .btn-pw { background: white; }
-
-    /* MODAL STYLES */
-    #banChatModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; }
-    .modal-content { background:white; width:95%; max-width:500px; margin:20px auto; padding:20px; border: 4px solid var(--red); position:relative; }
-    .chat-box { height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border:1px solid #ccc; margin-bottom:10px; display:flex; flex-direction:column; gap:8px; }
-    .msg { padding: 8px 12px; border-radius: 10px; font-family: sans-serif; font-size: 0.9em; max-width: 80%; }
-    .msg.user { background: #eee; align-self: flex-start; border: 1px solid #ccc; }
-    .msg.admin { background: var(--light-blue); align-self: flex-end; border: 1px solid var(--blue); text-align: right; }
-
-    /* Nav */
-    .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; border-top: 5px solid var(--red); z-index: 1000; }
-    .nav-link { flex: 1; text-align: center; text-decoration: none; color: black; font-size: 0.7em; padding-top: 15px; font-weight: bold; }
+    .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: white; display: flex; justify-content: space-around; align-items: center; border-top: 5px solid var(--red); z-index: 1000; }
+    .nav-item { flex: 1; text-align: center; text-decoration: none; color: black; font-size: 0.7em; font-weight: bold; text-transform: uppercase; }
+    .nav-item.active { color: var(--red); }
 </style>
 
 <div class="admin-header">
-    <h1>{% if is_hauptadmin %}ZENTRAL-DIREKTION{% else %}ADMINISTRATION{% endif %}</h1>
-</div>
-
-<div class="label-bar">
-    <span>ADMIN: {{ user.name }}</span>
-    <a href="/logout" style="color:var(--red); text-decoration:none;">LOGOUT 🚪</a>
+    <h1>{% if is_hauptadmin %}ZENTRAL-DIREKTION{% else %}MANAGEMENT ({{ user.group }}){% endif %}</h1>
 </div>
 
 {% if is_hauptadmin %}
-<div class="section-title"><b>🏢 ALLE GRUPPEN</b></div>
-{% for g_name, g_data in GROUPS.items() %}
-<div class="card">
-    <b>GRUPPE: {{ g_name }}</b>
-    <span class="info-tag">PW: {{ g_data.password }}</span>
-    <span class="info-tag">TYP: {{ g_data.type }}</span>
-    <span class="info-tag">MEMBER: {{ g_data.members|length }}</span>
-    <div class="actions">
-        <button class="btn-del" onclick="deleteGroup('{{ g_name }}')">GRUPPE LÖSCHEN</button>
-    </div>
-</div>
-{% endfor %}
-{% endif %}
-
-{% if is_hauptadmin and REPORTS %}
-<div class="section-title"><b>⚠️ AKUTE MELDUNGEN</b></div>
-{% for target_email, r_list in REPORTS.items() %}
-<div class="report-card">
-    <b>BESCHWERDE GEGEN: {{ USERS[target_email].name if target_email in USERS else target_email }}</b>
-    {% for r in r_list %}
-    <div class="report-item">
-        <strong>Von {{ r.from }}:</strong> {{ r.reason }}<br>
-        <small>{{ r.date }} | {{ r.time }}</small>
-    </div>
-    {% endfor %}
-    <div class="actions">
-        <button class="btn-ban" onclick="toggleBan('{{ target_email }}')">
-            {% if USERS[target_email].banned %}ENTBANNEN{% else %}SOFORT BANNEN{% endif %}
-        </button>
-        <button onclick="clearReports('{{ target_email }}')">MELDUNGEN LÖSCHEN</button>
-    </div>
-</div>
-{% endfor %}
-{% endif %}
-
-<div class="section-title"><b>👥 PERSONALKARTEI ({{ members|length }} Nutzer)</b></div>
-{% for m_email in members %}
-<div class="card {% if USERS[m_email].banned %}banned{% endif %}">
-    
-    <b>
-        {{ USERS[m_email].name }} 
-        {% if USERS[m_email].banned %} 
-            <span style="color:red;">[GEBANNT]</span> 
-        {% elif USERS[m_email].was_banned %}
-            <span style="color:orange; font-size: 0.8em;">(WAR SCHON MAL GEBANNT)</span>
-        {% endif %}
-    </b>
-    <span style="font-size: 0.8em; color: #666;">{{ m_email }}</span><br>
-    <span class="info-tag">PW: {{ USERS[m_email].password }}</span>
-    <span class="info-tag">ROLLE: {{ USERS[m_email].role }}</span>
-
-    <div class="actions">
-        <select onchange="updateUser('{{ m_email }}', 'role', this.value)">
-            <option value="SANI" {% if USERS[m_email].role == 'SANI' %}selected{% endif %}>SANI</option>
-            <option value="ADMIN" {% if USERS[m_email].role == 'ADMIN' %}selected{% endif %}>ADMIN</option>
-            {% if is_hauptadmin %}<option value="HAUPTADMIN" {% if USERS[m_email].role == 'HAUPTADMIN' %}selected{% endif %}>HAUPTADMIN</option>{% endif %}
-        </select>
-        <button class="btn-pw" onclick="changePW('{{ m_email }}')">PW</button>
-        <button class="btn-ban" onclick="toggleBan('{{ m_email }}')">BANN</button>
-        
-        {% if is_hauptadmin %}
-            {% if BAN_CHATS[m_email] %}
-                <button class="btn-msg" onclick="openBanChat('{{ m_email }}')">✉️ CHAT ({{ BAN_CHATS[m_email]|length }})</button>
-            {% endif %}
-            <button class="btn-del" onclick="deleteUser('{{ m_email }}')">LÖSCHEN</button>
-        {% endif %}
-    </div>
-</div>
-{% endfor %}
-
-<div id="banChatModal">
-    <div class="modal-content">
-        <h2 id="chatUserName">Support Chat</h2>
-        <div id="chatHistory" class="chat-box"></div>
-        <input type="hidden" id="currentChatEmail">
-        <textarea id="adminReplyText" style="width:100%; height:60px; border:2px solid var(--dark); padding:5px;" placeholder="Antwort schreiben..."></textarea>
+<div class="section-title"><b>⚠️ NUTZER-MELDUNGEN (GLOBAL)</b></div>
+{% set reports_count = namespace(value=0) %}
+{% for target_email, rep_list in REPORTS.items() %}
+    {% set reports_count.value = reports_count.value + 1 %}
+    <div class="card report-card" id="report-{{ loop.index }}">
+        <b style="color: var(--orange);">MELDUNG GEGEN: {{ USERS[target_email].name if target_email in USERS else target_email }}</b>
+        <div class="info-box">
+            {% for r in rep_list %}
+                <div style="border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 5px;">
+                    <small>{{ r.date }} - {{ r.time }}</small><br>
+                    <b>Von:</b> {{ r.from }}<br>
+                    <b>Grund:</b> {{ r.reason }}
+                </div>
+            {% endfor %}
+        </div>
         <div class="actions">
-            <button class="btn-msg" style="flex:1;" onclick="sendAdminReply()">ANTWORTEN</button>
-            <button style="flex:1;" onclick="closeBanChat()">SCHLIESSEN</button>
+            <button class="btn-action btn-unban" onclick="dismissReport('{{ target_email }}')">ERLEDIGT / LÖSCHEN</button>
+            <button class="btn-action btn-ban" onclick="toggleBan('{{ target_email }}')">BANNEN</button>
         </div>
     </div>
+{% endfor %}
+{% if reports_count.value == 0 %}
+    <p style="text-align: center; color: gray; font-size: 0.8em; margin: 20px;">Keine neuen Meldungen.</p>
+{% endif %}
+
+<div class="section-title"><b>🏢 GRUPPENÜBERSICHT</b></div>
+{% for g_name, g_data in GROUPS.items() %}
+<div class="card">
+    <b style="font-size: 1.2em;">{{ g_name }}</b><br>
+    <div style="margin-top: 10px; font-family: monospace; font-size: 0.9em;">
+        <b>TYP:</b> {{ g_data.type | upper }}<br>
+        <b>PASSWORT:</b> <span style="color: var(--blue); font-weight: bold;">{{ g_data.password if g_data.password else 'KEINS' }}</span>
+    </div>
+    <div class="actions">
+        <button class="btn-action btn-del" onclick="deleteGroup('{{ g_name }}')">GRUPPE UNWIDERRUFLICH LÖSCHEN</button>
+    </div>
 </div>
+{% endfor %}
+{% endif %}
+
+<div class="section-title"><b>👥 NUTZER VERWALTEN</b></div>
+{% for m_email in members %}
+    {% if m_email in USERS %}
+    {% set u_data = USERS[m_email] %}
+    {% set is_owner = (m_email == 'yunusemreguevercin12@gmail.com') %}
+
+    <div class="card {% if is_owner %}owner-card{% endif %} {% if u_data.banned %}banned{% endif %}">
+        <b>{{ u_data.name }}</b> 
+        {% if is_owner %}<span style="color:var(--blue)">[INHABER]</span>{% endif %}
+        
+        <div class="info-box">
+            <div>📧 ID: {% if is_owner %}GEBLOCKT{% else %}{{ m_email }}{% endif %}</div>
+            <div>🔑 PW: 
+                {% if is_owner %}
+                    ********
+                {% else %}
+                    <input type="text" value="{{ u_data.password }}" id="pw-{{ loop.index }}" class="pw-input">
+                    <button class="btn-action btn-save" onclick="changePassword('{{ m_email }}', 'pw-{{ loop.index }}')">SPEICHERN</button>
+                {% endif %}
+            </div>
+            <div>🏠 GRUPPE: {{ u_data.group if u_data.group else 'Keine' }}</div>
+        </div>
+
+        <div class="actions">
+            {% if not is_owner and m_email != session['email'] %}
+                <select onchange="updateUser('{{ m_email }}', 'role', this.value)">
+                    <option value="SANI" {% if u_data.role == 'SANI' %}selected{% endif %}>SANI</option>
+                    <option value="ADMIN" {% if u_data.role == 'ADMIN' %}selected{% endif %}>ADMIN</option>
+                    {% if is_hauptadmin %}<option value="HAUPTADMIN" {% if u_data.role == 'HAUPTADMIN' %}selected{% endif %}>HAUPTADMIN</option>{% endif %}
+                </select>
+
+                <button class="btn-action {% if u_data.banned %}btn-unban{% else %}btn-ban{% endif %}" onclick="toggleBan('{{ m_email }}')">
+                    {% if u_data.banned %}ENTSPERREN{% else %}BANNEN{% endif %}
+                </button>
+
+                <a href="{{ url_for('banned', target_email=m_email) }}" class="btn-action btn-chat">💬 CHAT</a>
+
+                {% if is_hauptadmin %}
+                    <button class="btn-action btn-user-del" onclick="deleteUserPermanently('{{ m_email }}')">🚨 USER LÖSCHEN</button>
+                {% endif %}
+
+            {% elif is_owner %}
+                <b style="color:var(--blue); font-size:0.7em;">🛡️ SYSTEM-SCHUTZ</b>
+            {% else %}
+                <small>DEIN PROFIL</small>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
 
 {% if not is_hauptadmin %}
-<nav class="bottom-nav">
-    <a href="/dashboard" class="nav-link">🏠<br>HOME</a>
-    <a href="/management" class="nav-link" style="color:var(--red)">⚙️<br>ADMIN</a>
-    <a href="/logout" class="nav-link" style="color: var(--red);">🚪<br>LOGOUT</a>
+<nav class="nav-bar">
+    <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
+    <a href="/management" class="nav-item active">⚙️<br>ADMIN</a>
+    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Logout</a>
 </nav>
+{% else %}
+<div style="text-align: center; padding: 40px;">
+    <a href="/logout" style="color: var(--red); font-weight: bold; text-decoration: none; border: 3px solid var(--red); padding: 15px 40px; display: inline-block; background: white;">🚪 SYSTEM-LOGOUT</a>
+</div>
 {% endif %}
 
 <script>
-let allBanChats = {{ BAN_CHATS|tojson }};
-
-function openBanChat(email) {
-    document.getElementById('currentChatEmail').value = email;
-    document.getElementById('chatUserName').innerText = "Chat mit: " + email;
-    const historyDiv = document.getElementById('chatHistory');
-    historyDiv.innerHTML = '';
-
-    const messages = allBanChats[email] || [];
-    messages.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = msg.is_admin ? 'msg admin' : 'msg user';
-        div.innerHTML = `<strong>${msg.sender}:</strong><br>${msg.message}<br><small>${msg.time}</small>`;
-        historyDiv.appendChild(div);
-    });
-
-    document.getElementById('banChatModal').style.display = 'block';
-    historyDiv.scrollTop = historyDiv.scrollHeight;
-}
-
-function closeBanChat() {
-    document.getElementById('banChatModal').style.display = 'none';
-}
-
-function sendAdminReply() {
-    const email = document.getElementById('currentChatEmail').value;
-    const msg = document.getElementById('adminReplyText').value;
-    if(!msg) return;
-
-    fetch('/api/admin/reply_ban', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: email, message: msg})
-    }).then(() => location.reload());
-}
-
-function deleteGroup(name) {
-    if(confirm("GRUPPE " + name + " LÖSCHEN? Mitglieder werden Sani.")) {
-        fetch('/api/admin/delete_group', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({group_name: name})
-        }).then(() => location.reload());
-    }
-}
-
-function updateUser(email, field, val) {
+function changePassword(email, inputId) {
+    const newPw = document.getElementById(inputId).value;
+    if(!newPw) return;
     fetch('/api/admin/update_user', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({email: email, [field]: val})
-    }).then(() => location.reload());
-}
-
-function changePW(email) {
-    let n = prompt("Neues PW:");
-    if(n) updateUser(email, 'password', n);
+        body: JSON.stringify({email: email, password: newPw})
+    }).then(() => alert("Passwort geändert"));
 }
 
 function toggleBan(email) {
+    if(!confirm("Sperrstatus ändern?")) return;
     fetch('/api/admin/toggle_ban', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -208,21 +158,46 @@ function toggleBan(email) {
     }).then(() => location.reload());
 }
 
-function deleteUser(email) {
-    if(confirm("Nutzer löschen?")) {
-        fetch('/api/admin/delete_user', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email: email})
-        }).then(() => location.reload());
-    }
+function dismissReport(email) {
+    if(!confirm("Meldung löschen?")) return;
+    fetch('/api/admin/dismiss_report', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: email}) 
+    }).then(() => location.reload());
 }
 
-function clearReports(email) {
-    fetch('/api/admin/clear_reports', {
+function deleteUserPermanently(email) {
+    if(!confirm("Soll der User " + email + " wirklich unwiderruflich gelöscht werden?")) return;
+    fetch('/api/admin/delete_user', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({email: email})
+    }).then(res => res.json()).then(data => {
+        if(data.status === 'ok') location.reload();
+        else alert(data.message);
+    });
+}
+
+function updateUser(email, field, val) {
+    fetch('/api/admin/update_user', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: email, field: field, value: val })
+    }).then(r => r.json()).then(data => {
+        if(data.status !== 'ok') {
+            alert("Fehler: " + data.message);
+            location.reload();
+        }
+    });
+}
+
+function deleteGroup(gName) {
+    if(!confirm("Gruppe " + gName + " löschen?")) return;
+    fetch('/api/admin/delete_group', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({group_name: gName})
     }).then(() => location.reload());
 }
 </script>

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .help-btn {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-decoration: none;
+        color: #2563eb;
+        float: right;
+    }
+</style>
+
+<div class="header">
+    <a href="/untis_hilfe" class="help-btn">❓ User-ID bekommen</a>
+    👤 DEIN PROFIL
+</div>
+
+<div class="profile-container" style="padding: 20px;">
+    <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <h3>Persönliche Daten</h3>
+        <p><strong>Name:</strong> {{ user.name }}</p>
+        <p><strong>E-Mail:</strong> {{ session['email'] }}</p>
+        <p><strong>Rolle:</strong> {{ user.role }}</p>
+        <p><strong>Gruppe:</strong> {{ user.group if user.group else 'Keine Gruppe' }}</p>
+    </div>
+
+    <div class="card" style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="color: #2563eb; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">
+            🔐 Untis Login-Daten
+        </h3>
+        
+        <form action="/api/save_untis" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <div>
+                <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">Benutzername (z.B. vorname.nachname)</label>
+                <input type="text" name="untis_user" value="{{ user.untis_user or '' }}" placeholder="Dein Untis-Name" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+
+            <div>
+                <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">Untis User-ID (Zahl, z.B. 1613)</label>
+                <input type="text" name="untis_id" value="{{ user.untis_id or '' }}" placeholder="Deine Schüler-ID" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;" required>
+            </div>
+
+            <div>
+                <label style="display: block; font-size: 0.8rem; color: #64748b; margin-bottom: 5px;">Passwort</label>
+                <input type="password" name="untis_password" placeholder="Passwort eingeben" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                {% if user.untis_password %}
+                    <p style="color: green; font-size: 0.75rem; margin-top: 5px;">✅ Passwort gespeichert</p>
+                {% else %}
+                    <p style="color: red; font-size: 0.75rem; margin-top: 5px;">❌ Kein Passwort hinterlegt</p>
+                {% endif %}
+            </div>
+
+            <button type="submit" style="background: #2563eb; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                Speichern & Aktivieren
+            </button>
+        </form>
+    </div>
+
+    {% if user.group %}
+    <button onclick="leaveGroup()" style="background: #dc2626; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 20px;">
+        Gruppe verlassen
+    </button>
+    {% endif %}
+</div>
+
+<nav class="nav-bar">
+    <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
+    <a href="/untis" class="nav-item">📅<br>Untis</a>
+    <a href="/profile" class="nav-item">👤<br>Profil</a>
+    <a href="/alarm_log" class="nav-item">🚨<br>Alarme</a>
+    <a href="/chat" class="nav-item">💬<br>CHAT</a>
+    {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
+    <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
+    {% endif %}
+    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Logout</a>
+</nav>
+
+<script>
+function leaveGroup() {
+    if(confirm('Möchtest du die Gruppe wirklich verlassen?')) {
+        fetch('/api/leave_group', {method: 'POST'})
+        .then(() => window.location.reload());
+    }
+}
+</script>
+{% endblock %}

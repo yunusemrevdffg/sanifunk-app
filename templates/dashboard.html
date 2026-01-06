@@ -5,30 +5,25 @@
 <style>
     :root { --red: #ff0000; --dark: #000000; --white: #ffffff; }
     body { background: #f4f4f4; padding-bottom: 90px; font-family: 'Arial Black', sans-serif; }
-
     .header-branding { background: var(--red); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--dark); text-transform: uppercase; letter-spacing: 1px; }
-    
     .dashboard-container { padding: 15px; max-width: 800px; margin: auto; }
-    
     .card { background: var(--white); border: 3px solid var(--dark); padding: 15px; margin-bottom: 20px; box-shadow: 6px 6px 0px var(--red); }
     .card h3 { margin-top: 0; border-bottom: 2px solid var(--dark); padding-bottom: 5px; text-transform: uppercase; font-size: 1.1em; }
-
-    input, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid var(--dark); font-weight: bold; box-sizing: border-box; }
-    
+    input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid var(--dark); font-weight: bold; box-sizing: border-box; font-family: sans-serif; }
     .btn-alarm { width: 100%; padding: 20px; font-size: 1.3em; background: var(--red); color: white; border: 3px solid var(--dark); font-weight: bold; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
-    .btn-alarm:active { transform: scale(0.98); box-shadow: none; }
-
-    /* Mitglieder Liste mit Melde-Button */
-    .member-list { margin-top: 10px; }
     .member-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #ddd; }
     .btn-report { background: none; border: none; font-size: 1.2em; cursor: pointer; filter: grayscale(1); transition: 0.2s; }
     .btn-report:hover { filter: grayscale(0); transform: scale(1.2); }
-
+    
+    /* Navigation */
     .nav-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; border-top: 4px solid var(--red); z-index: 1000; }
     .nav-item { flex: 1; text-align: center; text-decoration: none; color: var(--dark); font-size: 0.7em; padding-top: 15px; font-weight: bold; }
-    .nav-item.active { background: #fff0f0; color: var(--red); }
-
+    
+    /* Overlay & Modals */
     #alarmOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--red); color:white; z-index:9999; text-align:center; padding-top:50px; }
+    
+    .modal { display: none; position: fixed; z-index: 10001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); }
+    .modal-content { background-color: white; margin: 15% auto; padding: 20px; border: 4px solid var(--red); width: 85%; max-width: 400px; box-shadow: 10px 10px 0px var(--dark); }
 </style>
 
 <div class="header-branding">
@@ -45,14 +40,11 @@
             <option value="{{ m }}">{{ all_users[m]['name'] }}</option>
             {% endfor %}
         </select>
-        
         <input type="text" id="msg" placeholder="Meldung (z.B. VU Person klemmt)">
-        
         <div style="margin: 10px 0;">
             <input type="checkbox" id="gps" checked style="width: auto;">
             <label for="gps">📍 Standort mitsenden</label>
         </div>
-        
         <button class="btn-alarm" onclick="sendAlarm()">ALARM SENDEN</button>
     </div>
 
@@ -63,15 +55,22 @@
             <div class="member-item">
                 <span>{{ all_users[m]['name'] }} <small style="font-size: 0.7em; color: #666;">({{ all_users[m]['role'] }})</small></span>
                 {% if m != session['email'] %}
-                <button class="btn-report" onclick="reportUser('{{ m }}')" title="Nutzer melden">⚠️</button>
+                <button class="btn-report" onclick="openReportModal('{{ m }}', '{{ all_users[m]['name'] }}')">⚠️</button>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
+</div>
 
-    <div style="text-align:center; margin-top:10px;">
-        <button onclick="leaveGroup()" style="background:none; border:none; color:#666; font-size:0.8em; cursor:pointer; text-decoration: underline;">Gruppe verlassen</button>
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <h2 style="text-transform: uppercase; color: var(--red); margin-top: 0;">Nutzer melden</h2>
+        <p>Grund für die Meldung von <b id="reportTargetName"></b>:</p>
+        <input type="hidden" id="reportTargetEmail">
+        <textarea id="reportReason" rows="4" placeholder="Beschreibe das Fehlverhalten..."></textarea>
+        <button class="btn-alarm" onclick="submitReport()" style="padding: 10px; font-size: 1em;">Meldung absenden</button>
+        <button onclick="closeReportModal()" style="width: 100%; background: none; border: none; margin-top: 10px; cursor: pointer; text-decoration: underline;">Abbrechen</button>
     </div>
 </div>
 
@@ -83,68 +82,52 @@
 </div>
 
 <nav class="nav-bar">
-    <a href="/dashboard" class="nav-item active">🏠<br>dashboard</a>
-    <a href="/alarm_log" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
+    <a href="/untis" class="nav-item">📅<br>Untis</a>
+    <a href="/profile" class="nav-item">👤<br>Profil</a>
+    <a href="/alarm_log" class="nav-item">🚨<br>Alarme</a>
     <a href="/chat" class="nav-item">💬<br>CHAT</a>
     {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
     <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
     {% endif %}
-    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Ausloggen</a>
+    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Logout</a>
 </nav>
 
 <script>
     const alarmSound = new Audio("/static/audio/alarm.mp3"); 
     alarmSound.loop = true;
 
-    // Melde-Funktion
-    function reportUser(email) {
-        let reason = prompt("Warum möchtest du diesen Nutzer melden?");
-        if(reason) {
-            fetch('/api/report_user', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({target_email: email, reason: reason})
-            }).then(r => r.json()).then(data => {
-                if(data.status === 'ok') alert("Meldung wurde an den Hauptadmin gesendet.");
-            });
-        }
+    // --- REPORT FUNKTIONEN ---
+    function openReportModal(email, name) {
+        document.getElementById('reportTargetEmail').value = email;
+        document.getElementById('reportTargetName').innerText = name;
+        document.getElementById('reportModal').style.display = 'block';
     }
 
-    // 1. Funktion zum Senden eines Alarms
-    function triggerAlarm(msg) {
-        fetch('/api/send_alarm', {
+    function closeReportModal() {
+        document.getElementById('reportModal').style.display = 'none';
+        document.getElementById('reportReason').value = "";
+    }
+
+    function submitReport() {
+        const email = document.getElementById('reportTargetEmail').value;
+        const reason = document.getElementById('reportReason').value;
+
+        if(!reason) return alert("Bitte gib einen Grund an!");
+
+        fetch('/api/report_user', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ message: msg })
-        })
-        .then(res => res.json())
-        .then(data => {
+            body: JSON.stringify({target_email: email, reason: reason})
+        }).then(r => r.json()).then(data => {
             if(data.status === 'ok') {
-                alert("ALARM GESENDET!");
-                location.reload(); // Seite neu laden um Log zu sehen
+                alert("Meldung wurde an die Administration gesendet.");
+                closeReportModal();
             }
         });
     }
 
-    // 2. Funktion die prüft, ob ein Alarm für MICH vorliegt
-    function checkIncomingAlarm() {
-        fetch('/api/get_my_status') // Du musst diese Route noch in app.py einbauen (siehe unten)
-            .then(res => res.json())
-            .then(data => {
-                if (data.active_alarm) {
-                    const overlay = document.getElementById('alarmOverlay');
-                    if(overlay) {
-                        overlay.style.display = 'block';
-                        document.getElementById('alarmText').innerText = data.active_alarm.message;
-                        // Sound abspielen wenn gewünscht
-                    }
-                }
-            });
-    }
-
-    // Alle 3 Sekunden prüfen
-    setInterval(checkIncomingAlarm, 3000);
-
+    // --- ALARM FUNKTIONEN ---
     function sendAlarm() {
         const t = document.getElementById('target').value, m = document.getElementById('msg').value;
         const btn = document.querySelector('.btn-alarm');
@@ -173,7 +156,7 @@
         });
     }
 
-    // Alarm-Check
+    // Alarm-Check (API-Endpoint anpassen falls nötig)
     setInterval(() => {
         fetch('/api/check_alarm').then(r=>r.json()).then(d => {
             if(d.active) {
@@ -184,8 +167,8 @@
                 }
                 alarmSound.play().catch(() => {});
             }
-        });
-    }, 3000);
+        }).catch(e => console.log("Check-Fehler"));
+    }, 4000);
 
     function stopAlarm() { 
         fetch('/api/stop_alarm',{method:'POST'}).then(() => { 
@@ -193,15 +176,5 @@
             document.getElementById('alarmOverlay').style.display='none'; 
         }); 
     }
-
-    function leaveGroup() { 
-        if(confirm("Möchtest du die Gruppe wirklich verlassen?")) {
-            fetch('/api/leave_group',{method:'POST'}).then(() => window.location.href="/group-menu"); 
-        }
-    }
 </script>
-
-<style>
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
-</style>
 {% endblock %}

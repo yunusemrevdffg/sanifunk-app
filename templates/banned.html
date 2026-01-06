@@ -1,94 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaniFunk - Sperrstatus</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #000; color: #fff; padding: 50px 20px; }
-        .box { border: 2px solid red; padding: 20px; display: inline-block; width: 100%; max-width: 450px; box-sizing: border-box; }
+        :root { --red: #ff0000; --dark: #000; --blue: #007bff; --admin-msg: #1e3a8a; --user-msg: #334155; }
         
+        body { font-family: sans-serif; text-align: center; background: #050505; color: #fff; padding: 20px; margin: 0; }
+        
+        /* Navigation für Admins */
+        .admin-nav { max-width: 500px; margin: 0 auto 15px auto; text-align: left; }
+        .btn-back { display: inline-block; background: #1a1a1a; color: #fff; padding: 12px 20px; text-decoration: none; border: 2px solid #333; font-weight: bold; border-radius: 8px; text-transform: uppercase; font-size: 0.8em; }
+        .btn-back:hover { border-color: var(--blue); }
+
+        .container { border: 2px solid #333; padding: 25px; display: inline-block; width: 100%; max-width: 500px; box-sizing: border-box; background: #0f0f0f; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
+        
+        h1 { color: var(--red); margin: 0 0 10px 0; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+        .status-text { color: #94a3b8; font-size: 14px; margin-bottom: 25px; line-height: 1.5; }
+
         /* Chat Bereich */
-        #chat { 
-            background: #111; 
-            height: 250px; 
-            overflow-y: auto; 
-            text-align: left; 
-            padding: 10px; 
-            font-size: 14px; 
-            border: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 10px;
+        #chat-window { 
+            background: #050505; height: 350px; overflow-y: auto; text-align: left; 
+            padding: 15px; font-size: 14px; border: 1px solid #222;
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;
+            border-radius: 10px;
         }
 
-        /* Nachrichten-Blasen */
-        .msg { padding: 8px; border-radius: 5px; max-width: 85%; }
-        .msg.user { background: #333; align-self: flex-end; color: #eee; }
-        .msg.admin { background: #004466; align-self: flex-start; border-left: 3px solid #0099ff; }
+        .msg { padding: 12px 16px; border-radius: 12px; max-width: 85%; position: relative; }
         
-        .time { font-size: 10px; color: #888; display: block; margin-top: 4px; }
-        .sender-name { font-weight: bold; font-size: 11px; display: block; margin-bottom: 2px; }
+        /* Direktion (Admin) Nachrichten */
+        .msg.admin { align-self: flex-start; background: var(--admin-msg); color: white; border-bottom-left-radius: 2px; border-left: 4px solid var(--blue); }
+        
+        /* Nutzer Nachrichten */
+        .msg.user { align-self: flex-end; background: var(--user-msg); color: #f1f5f9; border-bottom-right-radius: 2px; }
+        
+        .tag { font-weight: bold; font-size: 9px; display: block; margin-bottom: 5px; text-transform: uppercase; opacity: 0.7; }
+        .time { font-size: 9px; color: #64748b; display: block; margin-top: 5px; text-align: right; }
 
-        input { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; background: #222; border: 1px solid #444; color: white; }
-        button { width: 100%; padding: 12px; background: red; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #cc0000; }
+        /* Eingabe */
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 14px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 8px; outline: none; }
+        input:focus { border-color: var(--red); }
+        
+        .btn-send { background: var(--red); color: white; border: none; padding: 0 20px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; }
+
+        .logout-link { display: inline-block; margin-top: 25px; color: #475569; text-decoration: none; font-size: 13px; font-weight: bold; }
+        .logout-link:hover { color: var(--red); }
     </style>
 </head>
 <body>
-    <div class="box">
-        <h1 style="color:red; margin-top:0;">ZUGRIFF GESPERRT</h1>
-        <p>Dein Account wurde deaktiviert.</p>
-        
-        <div id="chat">
-            {% if BAN_CHATS[session['email']] %}
-                {% for msg in BAN_CHATS[session['email']] %}
-                    <div class="msg {% if msg.is_admin %}admin{% else %}user{% endif %}">
-                        <span class="sender-name">
-                            {% if msg.is_admin %}DIREKTION{% else %}DU{% endif %}
-                        </span>
-                        {{ msg.message }}
-                        <span class="time">{{ msg.time }}</span>
-                    </div>
-                {% endfor %}
+
+    {% if is_admin_viewer %}
+    <div class="admin-nav">
+        <a href="/management" class="btn-back">← ZURÜCK ZUR VERWALTUNG</a>
+    </div>
+    {% endif %}
+
+    <div class="container">
+        <h1>{% if is_admin_viewer %}FALLAKTE: {{ USERS[target_email].name if target_email in USERS else 'Unbekannt' }}{% else %}ZUGRIFF GESPERRT{% endif %}</h1>
+        <div class="status-text">
+            {% if is_admin_viewer %}
+                Du betrachtest den Widerspruchs-Chat von <b>{{ target_email }}</b>.
             {% else %}
-                <div style="color:#555; text-align:center; margin-top:80px;">Keine Nachrichten vorhanden.</div>
+                Dein Account wurde aufgrund eines Verstoßes deaktiviert. Nutze den Chat für eine Stellungnahme an die Direktion.
             {% endif %}
         </div>
-
-        <input type="text" id="msg" placeholder="Nachricht an Admin schreiben...">
-        <button onclick="send()">ABSENDEN</button>
         
-        <br><br>
-        <a href="/logout" style="color:#888; text-decoration:none; font-size: 13px;">Abmelden / Logout</a>
+        <div id="chat-window">
+    {% if BAN_CHATS and target_email in BAN_CHATS %}
+        {% for msg in BAN_CHATS[target_email] %}
+            {# Logik: Wenn die E-Mail des Senders meine eigene ist, ist es 'user' (rechts), sonst 'admin' (links) #}
+            {% set is_my_own = (msg.sender == session['email']) %}
+            
+            <div class="msg {% if is_my_own %}user{% else %}admin{% endif %}">
+                <span class="tag">
+                    {% if is_my_own %}
+                        DEINE NACHRICHT
+                    {% else %}
+                        DIREKTION / ADMIN
+                    {% endif %}
+                </span>
+                {{ msg.message }}
+                <span class="time">{{ msg.date }} - {{ msg.time }}</span>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div style="color:#333; text-align:center; margin-top:150px; font-weight: bold;">KEINE NACHRICHTEN</div>
+    {% endif %}
+</div>
+
+        <div class="input-area">
+            <input type="text" id="msgInput" placeholder="Nachricht an Direktion..." autocomplete="off">
+            <button class="btn-send" onclick="send()">Senden</button>
+        </div>
+        
+        {% if not is_admin_viewer %}
+        <a href="/logout" class="logout-link">SYSTEM VERLASSEN (LOGOUT)</a>
+        {% endif %}
     </div>
 
     <script>
-        // Scrollt den Chat nach ganz unten beim Laden
-        const chatDiv = document.getElementById('chat');
-        chatDiv.scrollTop = chatDiv.scrollHeight;
+        const chatWindow = document.getElementById('chat-window');
+        chatWindow.scrollTop = chatWindow.scrollHeight;
 
         function send() {
-            let m = document.getElementById('msg').value;
-            if(!m) return;
+            const input = document.getElementById('msgInput');
+            const message = input.value.trim();
+            if (!message) return;
 
             fetch('/api/send_ban_appeal', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({message: m})
+                body: JSON.stringify({
+                    message: message,
+                    target_email: "{{ target_email }}"
+                })
             }).then(res => res.json()).then(data => {
-                if(data.status === 'ok') {
-                    // Seite neu laden, um die Nachricht im Verlauf anzuzeigen
-                    location.reload();
+                if (data.status === 'ok') {
+                    input.value = '';
+                    location.reload(); 
                 }
             });
         }
 
-        // Drücken der Enter-Taste zum Senden
-        document.getElementById('msg').addEventListener("keyup", function(event) {
-            if (event.key === "Enter") {
-                send();
-            }
+        document.getElementById('msgInput').addEventListener("keyup", function(event) {
+            if (event.key === "Enter") send();
         });
+
+        // Auto-Refresh nur für den gebannten User, damit er Antworten sieht
+        {% if not is_admin_viewer %}
+        setInterval(function() {
+            location.reload();
+        }, 20000); 
+        {% endif %}
     </script>
 </body>
 </html>

@@ -42,13 +42,15 @@
     </audio>
 
     <nav class="nav-bar">
-    <a href="/dashboard" class="nav-item active">🏠<br>dashboard</a>
-    <a href="/alarm_log" class="nav-item active">🚨<br>Alarme</a>
+    <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
+    <a href="/untis" class="nav-item">📅<br>Untis</a>
+    <a href="/profile" class="nav-item">👤<br>Profil</a>
+    <a href="/alarm_log" class="nav-item">🚨<br>Alarme</a>
     <a href="/chat" class="nav-item">💬<br>CHAT</a>
     {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
     <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
     {% endif %}
-    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Ausloggen</a>
+    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Logout</a>
 </nav>
 
 

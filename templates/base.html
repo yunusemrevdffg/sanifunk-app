@@ -37,7 +37,22 @@
     color: #8b0000;
     font-weight: bold;
 }
-    </style>
+</style>
+
+
+<script>
+
+setInterval(function() {
+    fetch('/api/get_latest_alarm')
+        .then(response => response.json())
+        .then(data => {
+            if (data && window.AndroidInterface) {
+                // Hier rufen wir die Android-App direkt auf!
+                window.AndroidInterface.triggerAlarm(data.title, data.message);
+            }
+        });
+}, 5000); // Check alle 5 Sekunden</script>
+
     
     <div class="container">
         {% with messages = get_flashed_messages() %}{% if messages %}
