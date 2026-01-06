@@ -101,6 +101,25 @@ def profile():
     if 'email' not in session: return redirect(url_for('login'))
     return render_template('profile.html', user=USERS.get(session['email']))
 
+@app.route('/api/check_alarm')
+def check_alarm():
+    my_email = session.get('email')
+    if not my_email or my_email not in USERS:
+        return jsonify({'active': False})
+    
+    user = USERS[my_email]
+    alarm = user.get('active_alarm')
+    
+    if alarm:
+        return jsonify({
+            'active': True,
+            'from': alarm.get('from_name', 'System'),
+            'msg': alarm.get('message', '🚨 EINSATZ'),
+            'lat': alarm.get('lat'),
+            'lng': alarm.get('lng')
+        })
+    return jsonify({'active': False})
+
 @app.route('/untis_hilfe')
 def untis_hilfe():
     return """
