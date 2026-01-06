@@ -12,7 +12,6 @@
     input, select { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid var(--dark); font-weight: bold; box-sizing: border-box; }
     .btn-alarm { width: 100%; padding: 20px; font-size: 1.3em; background: var(--red); color: white; border: 3px solid var(--dark); font-weight: bold; cursor: pointer; text-transform: uppercase; }
     #alarmOverlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--red); color: white; z-index: 99999; text-align: center; padding-top: 40px; box-sizing: border-box; }
-    .alarm-box { padding: 20px; }
     .blink { animation: blinker 0.6s linear infinite; }
     @keyframes blinker { 50% { opacity: 0; } }
     .btn-stop { background: white; color: var(--red); padding: 25px; width: 90%; border: 4px solid var(--dark); font-weight: bold; font-size: 1.5em; margin-top: 30px; cursor: pointer; text-transform: uppercase; }
@@ -20,9 +19,7 @@
     .nav-item { flex: 1; text-align: center; text-decoration: none; color: var(--dark); font-size: 0.7em; padding-top: 15px; font-weight: bold; text-transform: uppercase; }
 </style>
 
-<div class="header-branding">
-    {{ user.group }} <br> <small>Einsatz-Zentrale</small>
-</div>
+<div class="header-branding">{{ user.group }} <br> <small>Einsatz-Zentrale</small></div>
 
 <div class="dashboard-container">
     <div class="card">
@@ -31,40 +28,24 @@
         <select id="target">
             <option value="all">ALLE SANITÄTER</option>
             {% for m in members_emails if m != session['email'] %}
-                {% if m in all_users %}
-                    <option value="{{ m }}">{{ all_users[m]['name'] }}</option>
-                {% endif %}
+                <option value="{{ m }}">{{ all_users[m]['name'] if m in all_users else m }}</option>
             {% endfor %}
         </select>
         <input type="text" id="msg" placeholder="Grund (z.B. Kreislaufkollaps)">
         <div style="margin: 10px 0;">
-            <input type="checkbox" id="gps" checked style="width: auto;">
-            <label for="gps">📍 Standort mitsenden</label>
+            <input type="checkbox" id="gps" checked style="width: auto;"> <label for="gps">📍 Standort mitsenden</label>
         </div>
         <button class="btn-alarm" id="sendBtn" onclick="sendAlarm()">ALARM AUSLÖSEN</button>
-    </div>
-
-    <div class="card">
-        <h3>👥 TEAM STATUS</h3>
-        {% for m in members_emails %}
-            {% if m in all_users %}
-            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
-                <span>{{ all_users[m]['name'] }}</span>
-                <small style="color: gray;">{{ all_users[m]['role'] }}</small>
-            </div>
-            {% endif %}
-        {% endfor %}
     </div>
 </div>
 
 <div id="alarmOverlay">
     <div class="alarm-box">
         <h1 class="blink" style="font-size: 3.5em; margin: 0;">🚨 EINSATZ</h1>
-        <hr style="border: 2px solid white; margin: 20px 0;">
         <div id="alarmData">
-            <p style="font-size: 1.2em; text-transform: uppercase;">Meldung von:</p>
-            <h2 id="alarmFrom" style="background: white; color: var(--red); display: inline-block; padding: 5px 15px;">-</h2>
-            <p style="font-size: 1.2em; text-transform: uppercase; margin-top: 20px;">Grund:</p>
+            <p>Meldung von:</p>
+            <h2 id="alarmFrom" style="background: white; color: var(--red); padding: 5px 15px;">-</h2>
+            <p>Grund:</p>
             <h2 id="alarmText" style="font-size: 2em;">-</h2>
         </div>
         <div id="mapArea"></div>
@@ -74,13 +55,7 @@
 
 <nav class="nav-bar">
     <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
-    <a href="/untis" class="nav-item">📅<br>Untis</a>
-    <a href="/profile" class="nav-item">👤<br>Profil</a>
-    <a href="/alarm_log" class="nav-item">🚨<br>Alarme</a>
     <a href="/chat" class="nav-item">💬<br>CHAT</a>
-    {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
-    <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
-    {% endif %}
     <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Logout</a>
 </nav>
 
@@ -88,53 +63,39 @@
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
     let firstCheck = true;
+    let isAlarming = false; // Sperre gegen Dauer-Schleife
 
     setInterval(() => {
-        fetch('/api/check_alarm')
-        .then(r => r.json())
-        .then(data => {
+        fetch('/api/check_alarm').then(r => r.json()).then(data => {
             if (firstCheck) { firstCheck = false; return; }
             if (data.active) {
-                const overlay = document.getElementById('alarmOverlay');
-                if (overlay.style.display !== 'block') {
+                if (!isAlarming) {
+                    isAlarming = true;
                     document.getElementById('alarmFrom').innerText = data.from;
                     document.getElementById('alarmText').innerText = data.msg;
                     if (data.lat && data.lng) {
-                        const mapUrl = `http://googleusercontent.com/maps.google.com/6{data.lat},${data.lng}`;
-                        document.getElementById('mapArea').innerHTML = `
-                            <a href="${mapUrl}" style="background:white; color:black; padding:15px; text-decoration:none; display:block; margin:20px auto; width:80%; border:3px solid black; font-weight:bold; text-align:center;">
-                               📍 IN GOOGLE MAPS ÖFFNEN
-                            </a>`;
+                        document.getElementById('mapArea').innerHTML = `<a href="geo:${data.lat},${data.lng}?q=${data.lat},${data.lng}(Einsatz)" style="background:white; color:black; padding:15px; display:block; margin:20px auto; width:80%; border:3px solid black; font-weight:bold; text-decoration:none;">📍 IN MAPS ÖFFNEN</a>`;
                     }
-                    overlay.style.display = 'block';
-                    if (typeof AndroidInterface !== 'undefined') {
-                        AndroidInterface.triggerAlarm("🚨 EINSATZ", data.msg);
-                    } else {
-                        alarmSound.play().catch(e => {});
-                    }
+                    document.getElementById('alarmOverlay').style.display = 'block';
+                    if (typeof AndroidInterface !== 'undefined') AndroidInterface.triggerAlarm("🚨 EINSATZ", data.msg);
+                    else alarmSound.play().catch(e => {});
                 }
+            } else {
+                isAlarming = false;
+                document.getElementById('alarmOverlay').style.display = 'none';
             }
         });
     }, 3000);
 
-    function stopAlarm() {
-        fetch('/api/stop_alarm', { method: 'POST' }).then(() => {
-            alarmSound.pause();
-            alarmSound.currentTime = 0;
-            if (typeof AndroidInterface !== 'undefined') AndroidInterface.stopAndroidAlarm();
-            document.getElementById('alarmOverlay').style.display = 'none';
-        });
-    }
-
     function sendAlarm() {
+        const btn = document.getElementById('sendBtn');
+        btn.innerText = "WIRD GESENDET...";
+        btn.disabled = true;
         const t = document.getElementById('target').value;
         const m = document.getElementById('msg').value || "EINSATZ-ALARM";
         if (document.getElementById('gps').checked) {
-            navigator.geolocation.getCurrentPosition(
-                p => exec(t, m, p.coords.latitude, p.coords.longitude),
-                () => exec(t, m, null, null)
-            );
-        } else { exec(t, m, null, null); }
+            navigator.geolocation.getCurrentPosition(p => exec(t, m, p.coords.latitude, p.coords.longitude), () => exec(t, m, null, null));
+        } else exec(t, m, null, null);
     }
 
     function exec(t, m, la, lo) {
@@ -142,7 +103,19 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ target: t, message: m, lat: la, lng: lo })
-        }).then(() => { location.reload(); });
+        }).then(() => {
+            document.getElementById('sendBtn').innerText = "ERFOLGREICH!";
+            setTimeout(() => { location.reload(); }, 1500);
+        });
+    }
+
+    function stopAlarm() {
+        fetch('/api/stop_alarm', { method: 'POST' }).then(() => {
+            isAlarming = false;
+            alarmSound.pause();
+            if (typeof AndroidInterface !== 'undefined') AndroidInterface.stopAndroidAlarm();
+            document.getElementById('alarmOverlay').style.display = 'none';
+        });
     }
 </script>
 {% endblock %}

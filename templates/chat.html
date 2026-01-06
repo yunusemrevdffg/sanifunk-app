@@ -8,15 +8,14 @@
         body { background: #f4f4f4; padding-bottom: 140px; font-family: 'Arial Black', sans-serif; margin: 0; }
         .header { background: var(--red); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--dark); text-transform: uppercase; }
         .chat-container { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg-bubble { background: white; border: 2px solid var(--dark); padding: 10px; max-width: 80%; box-shadow: 4px 4px 0px var(--red); }
+        .msg-bubble { background: white; border: 2px solid var(--dark); padding: 10px; max-width: 80%; box-shadow: 4px 4px 0px var(--red); word-wrap: break-word; }
         .msg-bubble.own { align-self: flex-end; border-color: var(--red); box-shadow: 4px 4px 0px var(--dark); }
         .msg-info { display: block; font-size: 10px; opacity: 0.7; margin-bottom: 4px; text-transform: uppercase; }
-        .chat-input-bar { position: fixed; bottom: 70px; width: 100%; background: white; display: flex; padding: 10px; border-top: 3px solid var(--dark); box-sizing: border-box; gap: 5px; }
+        .chat-input-bar { position: fixed; bottom: 70px; width: 100%; background: white; display: flex; padding: 10px; border-top: 3px solid var(--dark); box-sizing: border-box; gap: 5px; z-index: 1001; }
         #t { flex: 1; padding: 12px; border: 2px solid var(--dark); font-weight: bold; font-size: 16px; }
         .btn-send { background: var(--red); color: white; border: 2px solid var(--dark); padding: 0 20px; font-weight: bold; cursor: pointer; }
         .nav-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: white; display: flex; border-top: 4px solid var(--red); z-index: 1000; }
-        .nav-item { flex: 1; text-align: center; text-decoration: none; color: var(--dark); font-size: 0.7em; padding-top: 15px; font-weight: bold; }
-        .nav-item.active { background: #fff0f0; color: var(--red); }
+        .nav-item { flex: 1; text-align: center; text-decoration: none; color: var(--dark); font-size: 0.7em; padding-top: 15px; font-weight: bold; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -42,24 +41,17 @@
     </audio>
 
     <nav class="nav-bar">
-    <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
-    <a href="/untis" class="nav-item">📅<br>Untis</a>
-    <a href="/profile" class="nav-item">👤<br>Profil</a>
-    <a href="/alarm_log" class="nav-item">🚨<br>Alarme</a>
-    <a href="/chat" class="nav-item">💬<br>CHAT</a>
-    {% if user.role in ['ADMIN', 'HAUPTADMIN'] %}
-    <a href="/management" class="nav-item">⚙️<br>ADMIN</a>
-    {% endif %}
-    <a href="/logout" class="nav-item" style="color: var(--red);">🚪<br>Logout</a>
-</nav>
-
+        <a href="/dashboard" class="nav-item">🏠<br>dashboard</a>
+        <a href="/chat" class="nav-item" style="color: var(--red);">💬<br>CHAT</a>
+        <a href="/logout" class="nav-item" style="color: gray;">🚪<br>Aus</a>
+    </nav>
 
     <script>
     let lastMsgCount = {{ messages|length }};
     const beep = document.getElementById('beepSound');
     const container = document.getElementById('chatContainer');
 
-    // Sofort nach unten scrollen beim Laden
+    // Sofort ganz nach unten scrollen beim Start
     window.scrollTo(0, document.body.scrollHeight);
 
     function s() {
@@ -79,6 +71,7 @@
         });
     }
 
+    // Senden mit Enter-Taste
     document.getElementById('t').addEventListener('keypress', (e) => { if (e.key === 'Enter') s(); });
 
     function loadMessages() {
@@ -86,21 +79,21 @@
             .then(res => res.json())
             .then(messages => {
                 if (messages.length > lastMsgCount) {
-                    const lastMsg = messages[messages.length - 1];
-
-                    // PRÜFUNG: Ist die Nachricht von jemand anderem?
-                    if (lastMsg.sender !== "{{ user.name }}") {
-                        
-                        // 1. Android App informieren (Vibration + System-Pling)
-                        if (typeof AndroidInterface !== 'undefined') {
-                            AndroidInterface.newChatMessage(lastMsg.sender, lastMsg.content);
-                        } else {
-                            // 2. Browser-Fallback (nur Ton)
-                            beep.play().catch(e => {});
+                    const newMessages = messages.slice(lastMsgCount);
+                    
+                    newMessages.forEach(m => {
+                        // Wenn die Nachricht von jemand anderem ist -> Benachrichtigung!
+                        if (m.sender !== "{{ user.name }}") {
+                            if (typeof AndroidInterface !== 'undefined') {
+                                // Ruft die Java-Funktion in der MainActivity auf
+                                AndroidInterface.newChatMessage(m.sender, m.content);
+                            } else {
+                                beep.play().catch(e => {});
+                            }
                         }
-                    }
+                    });
 
-                    // HTML der Nachrichten aktualisieren
+                    // Chat-Inhalt neu aufbauen
                     let html = '';
                     messages.forEach(m => {
                         const isOwn = m.sender === "{{ user.name }}";
@@ -113,14 +106,14 @@
                     container.innerHTML = html;
                     lastMsgCount = messages.length;
                     
-                    // Sanftes Scrollen nach unten bei neuen Nachrichten
+                    // Sanft nach unten scrollen
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 }
             });
     }
 
-    // Alle 2 Sekunden prüfen
-    setInterval(loadMessages, 2000);
-</script>
+    // Alle 3 Sekunden prüfen (Schont den Akku etwas mehr als 2s)
+    setInterval(loadMessages, 3000);
+    </script>
 </body>
 </html>
