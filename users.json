@@ -26,13 +26,13 @@
         "name": "leandro overath",
         "password": "leandro15.",
         "role": "SANI",
-        "group": null,
+        "group": "h jnk",
         "active_alarm": {
-            "from_name": "yunusemre güvercin",
+            "from_name": "leandro overath",
             "message": "",
-            "lat": 50.73598756574325,
-            "lng": 7.049657982495988,
-            "time": "16:11:41",
+            "lat": 50.73599595758814,
+            "lng": 7.049865684891841,
+            "time": "17:52:03",
             "date": "06.01.2026"
         },
         "banned": false
@@ -41,8 +41,15 @@
         "name": "yunusemre güvercin",
         "password": "yunuspro8.",
         "role": "ADMIN",
-        "group": "test",
-        "active_alarm": null,
+        "group": "h jnk",
+        "active_alarm": {
+            "from_name": "leandro overath",
+            "message": "",
+            "lat": 50.73599595758814,
+            "lng": 7.049865684891841,
+            "time": "17:52:03",
+            "date": "06.01.2026"
+        },
         "banned": false,
         "untis_user": "güveyun8142",
         "untis_id": "1613",

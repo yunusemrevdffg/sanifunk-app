@@ -245,22 +245,53 @@ def send_message():
 
 @app.route('/api/trigger_alarm', methods=['POST'])
 def trigger_alarm():
-    user = USERS.get(session['email']); group_name = user.get('group'); data = request.json
-    alarm_entry = {'from_name': user['name'], 'message': data.get('message', 'EINSATZ'), 'lat': data.get('lat'), 'lng': data.get('lng'), 'time': datetime.now().strftime('%H:%M:%S'), 'date': datetime.now().strftime('%d.%m.%Y')}
-    GROUPS[group_name].setdefault('history', []).insert(0, alarm_entry)
+    user = USERS.get(session.get('email'))
+    group_name = user.get('group')
+    data = request.json
+    
+    # Der Alarm-Eintrag mit der Bestätigungs-Liste
+    alarm_entry = {
+        'id': datetime.now().strftime('%Y%m%d%H%M%S'),
+        'from_name': user['name'],
+        'message': data.get('message', '🚨 EINSATZ'),
+        'lat': data.get('lat'),
+        'lng': data.get('lng'),
+        'time': datetime.now().strftime('%H:%M:%S'),
+        'date': datetime.now().strftime('%d.%m.%Y'),
+        'confirmed_by': []  # Hier landen die Namen der Sanis
+    }
+
+    if group_name in GROUPS:
+        GROUPS[group_name].setdefault('history', []).insert(0, alarm_entry)
+        GROUPS[group_name]['history'] = GROUPS[group_name]['history'][:15]
+
     target = data.get('target', 'all')
     if target == 'all':
         for m in GROUPS[group_name]['members']:
             if m in USERS: USERS[m]['active_alarm'] = alarm_entry
-    elif target in USERS: USERS[target]['active_alarm'] = alarm_entry
-    save_data(USER_FILE, USERS); save_data(GROUP_FILE, GROUPS); return jsonify({'status': 'ok'})
-
-    return jsonify({"status": "sent", "message": data.get('msg')})
-
+    elif target in USERS:
+        USERS[target]['active_alarm'] = alarm_entry
+    
+    save_data(USER_FILE, USERS)
+    save_data(GROUP_FILE, GROUPS)
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/stop_alarm', methods=['POST'])
 def stop_alarm():
-    if 'email' in session: USERS[session['email']]['active_alarm'] = None; save_data(USER_FILE, USERS)
+    my_email = session.get('email')
+    if my_email in USERS:
+        user = USERS[my_email]
+        group_name = user.get('group')
+        
+        # Sani in die Liste der Bestätigungen eintragen
+        if group_name in GROUPS and GROUPS[group_name].get('history'):
+            latest = GROUPS[group_name]['history'][0]
+            if user['name'] not in latest.get('confirmed_by', []):
+                latest.setdefault('confirmed_by', []).append(user['name'])
+        
+        USERS[my_email]['active_alarm'] = None
+        save_data(USER_FILE, USERS)
+        save_data(GROUP_FILE, GROUPS)
     return jsonify({'status': 'ok'})
 
 @app.route('/alarm_log')

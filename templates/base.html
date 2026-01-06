@@ -41,17 +41,22 @@
 
 
 <script>
-
-setInterval(function() {
-    fetch('/api/get_latest_alarm')
-        .then(response => response.json())
-        .then(data => {
-            if (data && window.AndroidInterface) {
-                // Hier rufen wir die Android-App direkt auf!
-                window.AndroidInterface.triggerAlarm(data.title, data.message);
+    // Diese Funktion prüft, ob ein neuer Alarm vorliegt
+    function checkNotifications() {
+        // Wir suchen auf der Seite nach einem Element mit der ID "alarm-active"
+        // Du musst in deinem Dashboard/HTML sicherstellen, dass dieses Element 
+        // erscheint, wenn ein Alarm ausgelöst wird.
+        if (document.getElementById('alarm-trigger')) {
+            if (window.AndroidInterface) {
+                // Hier wird die Android-App "geweckt"
+                window.AndroidInterface.triggerAlarm("🚨 NOTFALL-ALARM", "Sofortiger Einsatz erforderlich!");
             }
-        });
-}, 5000); // Check alle 5 Sekunden</script>
+        }
+    }
+
+    // Alle 5 Sekunden prüfen
+    setInterval(checkNotifications, 5000);
+</script>
 
     
     <div class="container">

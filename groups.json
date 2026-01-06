@@ -1,1 +1,30 @@
-{}
+{
+    "h jnk": {
+        "admin": "yunusemreguevercin11@gmail.com",
+        "members": [
+            "yunusemreguevercin11@gmail.com",
+            "leandro@gmail.com"
+        ],
+        "messages": [],
+        "history": [
+            {
+                "from_name": "leandro overath",
+                "message": "",
+                "lat": 50.73599595758814,
+                "lng": 7.049865684891841,
+                "time": "17:52:03",
+                "date": "06.01.2026"
+            },
+            {
+                "from_name": "yunusemre güvercin",
+                "message": "",
+                "lat": 50.73599595758814,
+                "lng": 7.049865684891841,
+                "time": "17:51:50",
+                "date": "06.01.2026"
+            }
+        ],
+        "type": "public",
+        "password": ""
+    }
+}
