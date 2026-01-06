@@ -123,15 +123,11 @@
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
 
-    // WICHTIG: Erlaubt dem Browser, Töne abzuspielen, sobald du 1x tippst
+    // Erlaubt Audio nach dem ersten Klick
     document.addEventListener('click', () => {
-        alarmSound.play().then(() => {
-            alarmSound.pause();
-            console.log("Audio freigeschaltet");
-        }).catch(e => {});
+        alarmSound.play().then(() => { alarmSound.pause(); }).catch(e => {});
     }, { once: true });
 
-    // Prüfen ob ein Alarm vorliegt
     setInterval(() => {
         fetch('/api/check_alarm')
         .then(r => r.json())
@@ -143,26 +139,18 @@
                     document.getElementById('alarmText').innerText = data.msg;
                     
                     if (data.lat && data.lng) {
-                        // FIX: Nutze Backticks ` und ${} für die Variablen
                         document.getElementById('mapArea').innerHTML = `
                             <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" 
-                               target="_blank" 
-                               style="color:white; font-weight:bold; font-size:1.2em; display:block; margin-top:20px;">
-                               📍 EINSATZORT AUF KARTE ANZEIGEN
+                               target="_blank" style="color:white; font-weight:bold;">
+                               📍 EINSATZORT ANZEIGEN
                             </a>`;
-                    } else {
-                        document.getElementById('mapArea').innerHTML = "";
                     }
-
                     overlay.style.display = 'block';
-                    // Sound abspielen (wird klappen, wenn vorher 1x geklickt wurde)
-                    alarmSound.play().catch(e => {
-                        console.log("Sound wurde blockiert. Bitte Seite berühren.");
-                    });
+                    alarmSound.play().catch(e => {});
                 }
             }
-        }).catch(err => console.error("Fehler beim Alarm-Check:", err));
-    }, 3000); // Alle 3 Sekunden prüfen
+        });
+    }, 3000);
 
     function stopAlarm() {
         fetch('/api/stop_alarm', { method: 'POST' }).then(() => {
@@ -175,23 +163,12 @@
     function sendAlarm() {
         const t = document.getElementById('target').value;
         const m = document.getElementById('msg').value || "EINSATZ-ALARM";
-        const btn = document.getElementById('sendBtn');
-        
-        btn.innerText = "SENDE...";
-        btn.style.background = "orange";
-
         if (document.getElementById('gps').checked) {
             navigator.geolocation.getCurrentPosition(
                 p => exec(t, m, p.coords.latitude, p.coords.longitude),
-                () => {
-                    alert("Standort konnte nicht ermittelt werden (bitte GPS erlauben). Sende ohne Standort...");
-                    exec(t, m, null, null);
-                },
-                { timeout: 5000 }
+                () => exec(t, m, null, null)
             );
-        } else {
-            exec(t, m, null, null);
-        }
+        } else { exec(t, m, null, null); }
     }
 
     function exec(t, m, la, lo) {
@@ -199,15 +176,6 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ target: t, message: m, lat: la, lng: lo })
-        }).then(() => {
-            const btn = document.getElementById('sendBtn');
-            btn.innerText = "✅ ERFOLGREICH";
-            btn.style.background = "green";
-            setTimeout(() => {
-                btn.innerText = "ALARM AUSLÖSEN";
-                btn.style.background = "";
-                document.getElementById('msg').value = "";
-            }, 3000);
-        });
+        }).then(() => { location.reload(); });
     }
 </script>

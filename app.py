@@ -1,10 +1,8 @@
-import os 
-from flask import Flask, render_template, request, session, jsonify
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, abort
-import json
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 import os
+import json
 from datetime import datetime, timedelta
-import webuntis
+import webuntis  # Muss hier stehen!
 
 app = Flask(__name__)
 app.secret_key = "sani_funk_ultra_2024_secure" 
@@ -102,24 +100,6 @@ def profile():
     if 'email' not in session: return redirect(url_for('login'))
     return render_template('profile.html', user=USERS.get(session['email']))
 
-@app.route('/api/check_alarm')
-def check_alarm():
-    my_email = session.get('email')
-    if not my_email or my_email not in USERS:
-        return jsonify({'active': False})
-    
-    user = USERS[my_email]
-    alarm = user.get('active_alarm')
-    
-    if alarm:
-        return jsonify({
-            'active': True,
-            'from': alarm.get('from_name', 'System'),
-            'msg': alarm.get('message', '🚨 EINSATZ'),
-            'lat': alarm.get('lat'),
-            'lng': alarm.get('lng')
-        })
-    return jsonify({'active': False})
 
 @app.route('/untis_hilfe')
 def untis_hilfe():
@@ -230,6 +210,8 @@ def dashboard():
     group = GROUPS.get(group_name)
     return render_template('dashboard.html', user=user, members_emails=group.get('members', []), all_users=USERS)
 
+
+
 @app.route('/group_menu', methods=['GET', 'POST'])
 def group_menu():
     if 'email' not in session: return redirect(url_for('login'))
@@ -251,6 +233,23 @@ def group_menu():
                     user['group'] = g_name; save_data(USER_FILE, USERS); save_data(GROUP_FILE, GROUPS)
                     return redirect(url_for('dashboard'))
     return render_template('group_menu.html', groups=GROUPS)
+
+@app.route('/api/check_alarm')
+def check_alarm():
+    my_email = session.get('email')
+    if not my_email or my_email not in USERS:
+        return jsonify({'active': False})
+    user = USERS[my_email]
+    alarm = user.get('active_alarm')
+    if alarm:
+        return jsonify({
+            'active': True,
+            'from': alarm.get('from_name', 'System'),
+            'msg': alarm.get('message', '🚨 EINSATZ'),
+            'lat': alarm.get('lat'),
+            'lng': alarm.get('lng')
+        })
+    return jsonify({'active': False})
 
 # --- CHAT & ALARM ---
 @app.route('/chat')
