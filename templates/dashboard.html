@@ -87,8 +87,8 @@
 <script>
     const alarmSound = new Audio("/static/audio/alarm.mp3");
     alarmSound.loop = true;
+    let firstCheck = true; // Verhindert Fake-Alarm beim Laden
 
-    // Erlaubt Audio nach dem ersten Klick (für Browser)
     document.addEventListener('click', () => {
         alarmSound.play().then(() => { alarmSound.pause(); }).catch(e => {});
     }, { once: true });
@@ -97,6 +97,13 @@
         fetch('/api/check_alarm')
         .then(r => r.json())
         .then(data => {
+            // Wenn die Seite neu geladen wird, ignorieren wir den ersten Status,
+            // damit kein alter Alarm sofort losgeht.
+            if (firstCheck) {
+                firstCheck = false;
+                return;
+            }
+
             if (data.active) {
                 const overlay = document.getElementById('alarmOverlay');
                 if (overlay.style.display !== 'block') {
@@ -104,21 +111,19 @@
                     document.getElementById('alarmText').innerText = data.msg;
                     
                     if (data.lat && data.lng) {
+                        // FIX: Google Maps Deep Link für die App
                         document.getElementById('mapArea').innerHTML = `
-                            <a href="https://www.google.com/maps?q=${data.lat},${data.lng}" 
-                               target="_blank" style="color:white; font-weight:bold; display:block; margin-top:20px;">
-                               📍 EINSATZORT ANZEIGEN
+                            <a href="https://www.google.com/maps/search/?api=1&query=${data.lat},${data.lng}" 
+                               style="background:white; color:black; padding:15px; text-decoration:none; display:block; margin:20px auto; width:80%; border:3px solid black; font-weight:bold;">
+                               📍 EINSATZORT IN GOOGLE MAPS ÖFFNEN
                             </a>`;
                     }
                     
                     overlay.style.display = 'block';
 
-                    // --- ANDROID INTEGRATION ---
-                    // Hier rufen wir das Interface deiner Android-App auf!
                     if (typeof AndroidInterface !== 'undefined') {
                         AndroidInterface.triggerAlarm("🚨 EINSATZ-ALARM", data.msg);
                     } else {
-                        // Falls wir im normalen Browser sind, spielen wir den Web-Sound
                         alarmSound.play().catch(e => {});
                     }
                 }
@@ -128,8 +133,15 @@
 
     function stopAlarm() {
         fetch('/api/stop_alarm', { method: 'POST' }).then(() => {
+            // 1. Web-Sound stoppen
             alarmSound.pause();
             alarmSound.currentTime = 0;
+
+            // 2. ANDROID-SOUND STOPPEN (Wichtig!)
+            if (typeof AndroidInterface !== 'undefined') {
+                AndroidInterface.stopAndroidAlarm();
+            }
+
             document.getElementById('alarmOverlay').style.display = 'none';
         });
     }
@@ -153,5 +165,4 @@
         }).then(() => { location.reload(); });
     }
 </script>
-
 {% endblock %}
