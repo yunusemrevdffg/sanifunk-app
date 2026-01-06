@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaniFunk - Stundenplan</title>
+    <style>
+        :root { --primary: #2563eb; --bg: #f1f5f9; --text-main: #1e293b; --text-muted: #64748b; --danger: #ef4444; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; background: var(--bg); overflow: hidden; }
+        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .header { background: white; padding: 12px 0; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .user-nav { display: flex; overflow-x: auto; gap: 15px; padding: 5px 20px; scrollbar-width: none; }
+        .user-btn { border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; min-width: 70px; }
+        .avatar { width: 45px; height: 45px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid transparent; }
+        .user-btn.active .avatar { border-color: var(--primary); background: #dbeafe; color: var(--primary); }
+        .main-content { flex-grow: 1; padding: 15px; overflow: hidden; display: flex; flex-direction: column; }
+        .mac-window { background: white; border: 1px solid #cbd5e1; border-radius: 14px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        .window-header { background: #f8fafc; padding: 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .plan-list { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        .lesson-card { display: flex; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; margin-bottom: 12px; border-left: 6px solid var(--primary); }
+        .lesson-card.cancelled { border-left-color: var(--danger); background: #fff1f2; }
+        .time-box { min-width: 85px; font-weight: bold; border-right: 1px solid #e2e8f0; margin-right: 15px; display: flex; align-items: center; }
+        .subject-name { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; }
+        .extra-info { font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 12px; }
+        .bottom-nav { background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 12px 0; }
+        .nav-item { text-decoration: none; color: var(--text-muted); font-size: 0.75rem; text-align: center; }
+        .nav-item.active { color: var(--primary); font-weight: bold; }
+    </style>
+</head>
+<body>
+    <form id="switchForm" method="POST" action="/untis" style="display:none;"><input type="hidden" name="target_email" id="targetInput"></form>
+    <div class="app-container">
+        <header class="header">
+            <div class="user-nav">
+                {% for member in members %}
+                <button class="user-btn {{ 'active' if target == member.name else '' }}" onclick="switchSani('{{ member.email }}')">
+                    <div class="avatar">{{ member.name[0] | upper }}</div>
+                    <div style="font-size: 0.7rem; margin-top: 4px;">{{ member.name.split(' ')[0] }}</div>
+                </button>
+                {% endfor %}
+            </div>
+        </header>
+        <main class="main-content">
+            <div class="mac-window">
+                <div class="window-header">
+                    <div style="display:flex; gap:5px;"><div style="width:10px; height:10px; border-radius:50%; background:#ff5f56;"></div><div style="width:10px; height:10px; border-radius:50%; background:#ffbd2e;"></div><div style="width:10px; height:10px; border-radius:50%; background:#27c93f;"></div></div>
+                    <div style="font-size: 0.75rem; font-weight: bold;">{{ target | upper }}'S PLAN</div>
+                    <div></div>
+                </div>
+                <div class="plan-list">
+                    {% if error %}<div style="color: var(--danger); font-size: 0.8rem;">{{ error }}</div>{% endif %}
+                    {% for lesson in plan %}
+                    <div class="lesson-card {{ 'cancelled' if lesson.code == 'cancelled' else '' }}">
+                        <div class="time-box">{{ lesson.zeit_anzeige }}</div>
+                        <div class="info-box">
+                            <div class="subject-name">{{ lesson.subject }}</div>
+                            <div class="extra-info"><span>📍 {{ lesson.room }}</span><span>👤 {{ lesson.teacher }}</span></div>
+                        </div>
+                    </div>
+                    {% else %}<div style="text-align: center; padding: 20px;">Kein Plan geladen.</div>{% endfor %}
+                </div>
+            </div>
+        </main>
+        <nav class="bottom-nav">
+            <a href="/dashboard" class="nav-item">🏠<br>Home</a>
+            <a href="/untis" class="nav-item active">📅<br>Plan</a>
+            <a href="/chat" class="nav-item">💬<br>Chat</a>
+        </nav>
+    </div>
+    <script>function switchSani(e){document.getElementById('targetInput').value=e; document.getElementById('switchForm').submit();}</script>
+</body>
+</html>
